@@ -56,7 +56,7 @@ void setup()
                           9,  // spreading factor
                           7,  // coding rate
                           0x12,  // sync word
-                          15,  // output power (dBm)
+                          17,  // output power (dBm)
                           8,  // preample length (symbols)
                           0);  // gain (0 is automatic control)
   radio.setCRC(true);  // enables cyclic redundancy check
