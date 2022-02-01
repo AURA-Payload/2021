@@ -63,8 +63,8 @@ unsigned int transmitInterval = 2500;  // milliseconds between tranmissions
 byte RXarray[7];  // stores received array
 
 // radio variables
-int transmitState = ERR_NONE;  // saves radio state when transmitting
-int receiveState = ERR_NONE;  // saves radio state when receiving
+int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
+int receiveState = RADIOLIB_ERR_NONE;  // saves radio state when receiving
 volatile bool enableInterrupt = true;  // disables interrupt when not needed
 volatile bool operationDone = false;  // indicates an operation is complete
 bool transmitFlag = false;  // indicates the last operation was transmission
@@ -94,7 +94,7 @@ void setup()
   radio.setCRC(true);  // enables cyclic redundancy check
   delay(500);
   
-  if (receiveState == ERR_NONE)  // if radio initialized correctly
+  if (receiveState == RADIOLIB_ERR_NONE)  // if radio initialized correctly
     Serial.println(F("init success!"));
   else
   {
@@ -198,7 +198,7 @@ void loop()
 
     if(transmitFlag)  // last action was transmit
     {
-//      if (transmitState == ERR_NONE)  // if transmission completed successsfully
+//      if (transmitState == RADIOLIB_ERR_NONE)  // if transmission completed successsfully
 //        Serial.println(F("transmission finished!"));
 //      else  // if transmission failed
 //      {
@@ -294,7 +294,7 @@ void handleReceive()  // performs everything necessary when data comes in
 {
   receiveState = radio.readData(RXarray, 7);  // read received data to array
 
-  if (receiveState == ERR_NONE)  // packet received correctly
+  if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
 //    Serial.println(F("[RFM95] Received packet!"));
 //
