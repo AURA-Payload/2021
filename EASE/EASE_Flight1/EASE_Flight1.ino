@@ -4,18 +4,12 @@
     AURA Payload 2021-22
   "
   -------------------------------------------------------------*/
-#define LOCALPRESSURE 1016.8  // used to calculate altitude
 #define LED_1 18
 #define LED_2 19
 #define LIMIT_1 16
 #define LIMIT_2 17
 
 #include <RadioLib.h>  // include radio library
-#include <SdFat.h>  // include SD library
-#include <Wire.h>
-#include <LSM6.h>
-#include <LPS.h>
-#include <Adafruit_Sensor.h>
 
 // motor pins
 #define PWM_A 6 // PWM pin, motor A
@@ -30,12 +24,6 @@
 #define DIO1PIN 4
 
 RFM95 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
-
-LSM6 imu;  // sensor stuff
-LPS ps;
-
-float BMPcal = 0;
-float LPScal = 0;
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -60,7 +48,6 @@ void setup()
 {
 
   Serial.begin(115200);
-  Wire.begin();
   delay(250);
 
   // ----- BEGIN RADIO SETUP -----
