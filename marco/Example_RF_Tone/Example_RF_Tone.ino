@@ -25,7 +25,8 @@ int state = 0;
 SX1276 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
+  radio.setRfSwitchPins(RXENPIN, TXENPIN);  // set up RF switch pins
 
   // initialize SX1276 FSK modem with default settings
   Serial.print(F("[SX1276] Initializing FSK ... "));
@@ -45,16 +46,12 @@ void setup() {
 
   // the following settings can also
   // be modified at run-time
-  radio.setRfSwitchPins(RXENPIN, TXENPIN);  // set up RF switch pins
-  state = radio.setFrequency(915.0);  // frequency can be set to something that doesn't have much traffic
+  state = radio.setFrequency(905.0);  // frequency can be set to something that doesn't have much traffic
   state = radio.setBitRate(100.0);
   state = radio.setFrequencyDeviation(10.0);
   state = radio.setRxBandwidth(250.0);
-  state = radio.setOutputPower(2.0);
-  state = radio.setDataShaping(RADIOLIB_SHAPING_0_5);
-  uint8_t syncWord[] = {0x01, 0x23, 0x45, 0x67,
-                        0x89, 0xAB, 0xCD, 0xEF};
-  state = radio.setSyncWord(syncWord, 8);
+  state = radio.setOutputPower(1.0);
+  state = radio.setDataShaping(0.0);
   if (state != RADIOLIB_ERR_NONE) {
     Serial.print(F("Unable to set configuration, code "));
     Serial.println(state);
@@ -73,25 +70,29 @@ void loop() {
     Serial.println(F("[SX1276] Unable to start direct transmission mode, code "));
     Serial.println(state);
   }
+  else
+    Serial.println("transmitting");
 
   // using the direct mode, it is possible to transmit
   // FM notes with Arduino tone() function
 
   // it is recommended to set data shaping to 0
   // (no shaping) when transmitting audio
-  state = radio.setDataShaping(0.0);
-  if (state != RADIOLIB_ERR_NONE) {
-    Serial.println(F("[SX1276] Unable to set data shaping, code "));
-    Serial.println(state);
-  }
 
   // transmit FM tone at 1000 Hz for 1 second, then 500 Hz for 1 second
-  // (DIO2 is connected to Arduino pin 4)
   tone(DIO2PIN, 1000);
   delay(1000);
   tone(DIO2PIN, 500);
   delay(1000);
   noTone(DIO2PIN);
+  
+  /*digitalWrite(DIO2PIN, HIGH);
+  delay(2000);
+  while(true);
+  {}
+  digitalWrite(DIO2PIN, LOW);*/
+
+  radio.standby();
 
   // NOTE: after calling transmitDirect(), SX127x will start
   // transmitting immediately! This signal can jam other
@@ -100,11 +101,11 @@ void loop() {
 
   // direct mode transmissions can also be received
   // as bit stream on DIO1 (data) and DIO2 (clock)
-  state = radio.receiveDirect();
+  /*state = radio.receiveDirect();
   if (state != RADIOLIB_ERR_NONE) {
     Serial.println(F("[SX1276] Unable to start direct reception mode, code "));
     Serial.println(state);
-  }
+  }*/
   delay(2000);
 
   // NOTE: you will not be able to send or receive packets
