@@ -38,6 +38,8 @@ void setup() {
     Serial.println(state);
     while (true);
   }
+  
+  delay(250);
 
   // if needed, you can switch between LoRa and FSK modes
   //
