@@ -39,7 +39,6 @@ bool enableInterrupt = true;  // disables interrupt when not needed
 volatile bool operationDone = false;  // indicates an operation is complete
 bool transmitFlag = false;  // indicates the last operation was transmission
 bool txComplete = true;  // indicates the last transmission is done
-int lastRSSI = 0;  // saves RSSI to be transmitted
 
 // control variables
 int controls[] = {0, 0, 0}; // stores arm flag and motor values
@@ -125,7 +124,7 @@ void loop()
       handleReceive();  // this stores received data to RXarray and saves RSSI
       setMotor();  // sets the motors based on controls array
       delay(10);
-      transmitData();  // send a message back to GS
+      //transmitData();  // send a message back to GS
     }
     enableInterrupt = true;  // reenable the interrupt
   }
