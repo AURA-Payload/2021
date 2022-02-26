@@ -19,7 +19,7 @@
 
 #include <RadioLib.h>  // include radio library
 #include <Wire.h>
-#include <Servo.h>
+//#include <Servo.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>
 #include <Adafruit_BMP280.h>
@@ -38,11 +38,11 @@
 
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
-Servo SERVO_1;
-Servo SERVO_2;
-Servo SERVO_3;
-Servo SERVO_4;
-Servo SERVO_5;
+//Servo SERVO_1;
+//Servo SERVO_2;
+//Servo SERVO_3;
+//Servo SERVO_4;
+//Servo SERVO_5;
 
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 Adafruit_BMP280 bmp; // I2C
@@ -62,11 +62,11 @@ void setup()
   pinMode(LIMIT_1, INPUT);
   pinMode(LIMIT_2, INPUT);
 
-  SERVO_1.attach(SERVO1PIN);
-  SERVO_2.attach(SERVO2PIN);
-  SERVO_3.attach(SERVO3PIN);
-  SERVO_4.attach(SERVO4PIN);
-  SERVO_5.attach(SERVO5PIN);
+//  SERVO_1.attach(SERVO1PIN);
+//  SERVO_2.attach(SERVO2PIN);
+//  SERVO_3.attach(SERVO3PIN);
+//  SERVO_4.attach(SERVO4PIN);
+//  SERVO_5.attach(SERVO5PIN);
 
   Serial.begin(115200);
   Wire.begin();
@@ -117,7 +117,7 @@ void setup()
                   Adafruit_BMP280::FILTER_OFF,
                   Adafruit_BMP280::STANDBY_MS_500);
   
-  delay(2500);
+  delay(30000);
   BMPcal = bmp.readAltitude(LOCALPRESSURE);
   Serial.println(BMPcal);
   
@@ -128,31 +128,38 @@ void setup()
 
 void loop()
 {
+  digitalWrite(LED_1, HIGH);
+  
   //Turn motor A on forward, then reverse.
   digitalWrite(DIR_A, HIGH);
   analogWrite(PWM_A, 100);
-  delay(2000);
+  delay(1000);
   analogWrite(PWM_A, 0);
 
   delay(100);
 
   digitalWrite(DIR_A, LOW);
   analogWrite(PWM_A, 100);
-  delay(2000);
+  delay(1000);
   analogWrite(PWM_A, 0);
+
+  digitalWrite(LED_1, LOW);
+  digitalWrite(LED_2, HIGH);
 
   //Turn motor B on forward, then reverse.
   digitalWrite(DIR_B, HIGH);
   analogWrite(PWM_B, 100);
-  delay(2000);
+  delay(1000);
   analogWrite(PWM_B, 0);
 
   delay(100);
 
   digitalWrite(DIR_B, LOW);
   analogWrite(PWM_B, 100);
-  delay(2000);
+  delay(1000);
   analogWrite(PWM_B, 0);
+
+  digitalWrite(LED_2, LOW);
   
 
   sensors_event_t event;  // get ADXL345 data
@@ -170,32 +177,25 @@ void loop()
   dataString += "\n";
 
   Serial.print(dataString);
-  
-  digitalWrite(LED_1, HIGH);
-  delay(1000);
-  digitalWrite(LED_1, LOW);
-  digitalWrite(LED_2, HIGH);
-  delay(1000);
-  digitalWrite(LED_2, LOW);
 
-  SERVO_1.write(0);
-  delay(100);
-  SERVO_2.write(0);
-  delay(100);
-  SERVO_3.write(0);
-  delay(100);
-  SERVO_4.write(0);
-  delay(100);
-  SERVO_5.write(0);
-  delay(2000);
-  SERVO_1.write(180);
-  delay(100);
-  SERVO_2.write(180);
-  delay(100);
-  SERVO_3.write(180);
-  delay(100);
-  SERVO_4.write(180);
-  delay(100);
-  SERVO_5.write(180);
-  delay(100);
+//  SERVO_1.write(0);
+//  delay(100);
+//  SERVO_2.write(0);
+//  delay(100);
+//  SERVO_3.write(0);
+//  delay(100);
+//  SERVO_4.write(0);
+//  delay(100);
+//  SERVO_5.write(0);
+//  delay(2000);
+//  SERVO_1.write(180);
+//  delay(100);
+//  SERVO_2.write(180);
+//  delay(100);
+//  SERVO_3.write(180);
+//  delay(100);
+//  SERVO_4.write(180);
+//  delay(100);
+//  SERVO_5.write(180);
+//  delay(100);
 }
