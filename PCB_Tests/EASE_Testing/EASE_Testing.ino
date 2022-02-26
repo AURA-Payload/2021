@@ -4,17 +4,17 @@
     AURA Payload 2021-22
   "
   -------------------------------------------------------------*/
-#define LOCALPRESSURE 1016.8  // used to calculate altitude
+//#define LOCALPRESSURE 1016.8  // used to calculate altitude
 #define LED_1 18
 #define LED_2 19
 #define LIMIT_1 16
 #define LIMIT_2 17
 
 #include <RadioLib.h>  // include radio library
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_ADXL345_U.h>
-#include <Adafruit_BMP280.h>
+//#include <Wire.h>
+//#include <Adafruit_Sensor.h>
+//#include <Adafruit_ADXL345_U.h>
+//#include <Adafruit_BMP280.h>
 
 // motor pins
 #define PWM_A 6 // PWM pin, motor A
@@ -30,10 +30,15 @@
 
 RFM95 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
-Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
-Adafruit_BMP280 bmp; // I2C
+//Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
+//Adafruit_BMP280 bmp; // I2C
 
-float BMPcal = 0;
+//float BMPcal = 0;
+
+int startTime = 0;
+int runningTime = 0;
+int sw1State = 0;
+int sw2State = 0;
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -56,7 +61,6 @@ int controls[] = {0, 0, 0, 0}; // stores motor values and datalog flag
 
 void setup()
 {
-
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
 
@@ -64,7 +68,7 @@ void setup()
   pinMode(LIMIT_2, INPUT_PULLUP);
 
   Serial.begin(115200);
-  Wire.begin();
+//  Wire.begin();
   delay(250);
 
   // ----- BEGIN RADIO SETUP -----
@@ -92,40 +96,43 @@ void setup()
   // ----- END RADIO SETUP -----
 
   // ----- ADXL345 ACCELEROMETER SETUP -----
-  if(!accel.begin())
-    Serial.println("ADXL345 initialization failed");
-  else
-    Serial.println("ADXL345 initialized");
-  
-  accel.setRange(ADXL345_RANGE_16_G);
-  
-  delay(500);
+//  if(!accel.begin())
+//    Serial.println("ADXL345 initialization failed");
+//  else
+//    Serial.println("ADXL345 initialized");
+//  
+//  accel.setRange(ADXL345_RANGE_16_G);
+//  
+//  delay(500);
   
   // ----- BMP280 ALTIMETER SETUP -----
-  if (!bmp.begin())
-    Serial.println("BMP280 initialization failed");
-  else
-    Serial.println("BMP280 initialized");
+//  if (!bmp.begin())
+//    Serial.println("BMP280 initialization failed");
+//  else
+//    Serial.println("BMP280 initialized");
+//
+//  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
+//                  Adafruit_BMP280::SAMPLING_X2,
+//                  Adafruit_BMP280::SAMPLING_X16,
+//                  Adafruit_BMP280::FILTER_OFF,
+//                  Adafruit_BMP280::STANDBY_MS_500);
+//  
+//  delay(500);
+//  BMPcal = bmp.readAltitude(LOCALPRESSURE);
 
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
-                  Adafruit_BMP280::SAMPLING_X2,
-                  Adafruit_BMP280::SAMPLING_X16,
-                  Adafruit_BMP280::FILTER_OFF,
-                  Adafruit_BMP280::STANDBY_MS_500);
   
-  delay(500);
-  BMPcal = bmp.readAltitude(LOCALPRESSURE);
 
-  
-
-  Serial.println("Startup complete");
+  Serial.print("Startup complete: ");
 
   setMotors();  // sets the motors based on controls array
+  
+  startTime = millis();
+  Serial.print(startTime);
+  Serial.println("ms");
 }
 
 void loop()
 {
-
   //Turn motor A on forward, then reverse.
   digitalWrite(DIR_A, HIGH);
   analogWrite(PWM_A, 100);
@@ -155,23 +162,26 @@ void loop()
   digitalWrite(LED_1, HIGH);
 
   //For 30 seconds, while LED 1 is on, if you press a limit switch, LED 2 will turn on
-  int startTime = millis();
-  int runningTime = millis() - startTime;
-  while(runningTime < 60000) {
-    if(digitalRead(LIMIT_1 == LOW)) {
-      digitalWrite(LED_2, HIGH);
-      delay(1000);
-      digitalWrite(LED_2, LOW);
-    }
-    if(digitalRead(LIMIT_2 == LOW)) {
-      digitalWrite(LED_2, HIGH);
-      delay(1000);
-      digitalWrite(LED_2, LOW);
-    }
-    runningTime = millis() - startTime;  
-  }
-  
+//  runningTime = millis() - startTime;
+//  while(runningTime < 60000) {
+//    if(!digitalRead(LIMIT_1)) {
+//      digitalWrite(LED_2, HIGH);
+//      delay(1000);
+//      digitalWrite(LED_2, LOW);
+//    }
+//    if(!digitalRead(LIMIT_2)) {
+//      digitalWrite(LED_2, HIGH);
+//      delay(1000);
+//      digitalWrite(LED_2, LOW);
+//    }
+//    runningTime = millis() - startTime;  
+//  }
+
+  delay(1000);
   digitalWrite(LED_1, LOW);
+  digitalWrite(LED_2, HIGH);
+  delay(1000);
+  digitalWrite(LED_2, LOW);
 }
 
 void setMotors()
