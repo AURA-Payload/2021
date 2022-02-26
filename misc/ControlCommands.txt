@@ -11,21 +11,23 @@ Byte 0 - System address (0 = MARCO, 1 = EASE, 2 = SOAR, 3 = POLO)
 Byte 1 - Binary statuses
   Bit 0 - Armed/disarmed
   Bit 1 - EASE dir
-  Bit 2 - SLS dir
-  Bit 3 - SLS latch (open/close)
-  Bit 4 - LEGS state (retracted/SOAR controlled)
-  Bit 5 - POLO levelling (fixed servo/accelerometer controlled)
+  Bit 2 - SOAR dir
+  Bit 3 - SLS dir
+  Bit 4 - SLS latch (open/close)
+  Bit 5 - LEGS state (retracted/SOAR controlled)
   Bit 6 - Direction find (in)active
   Bit 7 - Rangefind (in)active
   
 Byte 2 - EASE speed
 
-Byte 3 - SLS speed
+Byte 3 - SOAR speed
 
-Byte 4 - Leg 1 angle
+Byte 4 - SLS speed
 
-Byte 5 - Leg 2 angle
+Byte 5 - Leg 1 angle
 
-Byte 6 - Leg 3 angle
+Byte 6 - Leg 2 angle
 
-Byte 7 - Leg 4 angle
+Byte 7 - Leg 3 angle
+
+Byte 8 - Leg 4 angle
