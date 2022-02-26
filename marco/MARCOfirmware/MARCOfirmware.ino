@@ -37,8 +37,8 @@ unsigned int transmitTimer = 0;  // stores the time of the last transmission
 unsigned int transmitInterval = 1500;  // time between tranmissions
 
 // Radio variables
-int transmitState = ERR_NONE;  // saves radio state when transmitting
-int receiveState = ERR_NONE;  // saves radio state when receiving
+int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
+int receiveState = RADIOLIB_ERR_NONE;  // saves radio state when receiving
 bool enableInterrupt = true;  // disables interrupt when not needed
 volatile bool operationDone = false;  // indicates an operation is complete
 bool transmitFlag = false;  // indicates the last operation was transmission
@@ -64,7 +64,7 @@ void setup()
 
   delay(250);
   
-  if (receiveState == ERR_NONE)  // if radio initialized correctly
+  if (receiveState == RADIOLIB_ERR_NONE)  // if radio initialized correctly
     Serial.println(F("init success!"));
   else
   {
@@ -90,7 +90,7 @@ void loop()
 
     if(transmitFlag)  // last action was transmit
     {
-      if (transmitState == ERR_NONE)  // if transmission completed successsfully
+      if (transmitState == RADIOLIB_ERR_NONE)  // if transmission completed successsfully
         Serial.println(F("transmission finished"));
       else  // if transmission failed
       {
@@ -106,7 +106,7 @@ void loop()
     {
       receiveState = radio.readData(RXarray, 9);  // save received data to RXarray
 
-      if (receiveState == ERR_NONE)  // packet received correctly
+      if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
       {
         Serial.println(F("[SX1276] Received packet!"));
   
@@ -134,7 +134,7 @@ void loop()
         Serial.print(radio.getRSSI());
         Serial.println(F(" dBm"));
       }
-      else if (receiveState == ERR_CRC_MISMATCH)  // packet received malformed
+      else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
         Serial.println(F("[SX1276] CRC error!"));
       else  // some other error
       {
@@ -216,13 +216,13 @@ void handleCommand()
   {
     if (offLoc > -1)
     {
-      TXarray[1] & 0b11111110;  // clear ARM bit
+      TXarray[1] &= 0b11111110;  // clear ARM bit
       TXarray[2] = 0;  // set EASE speed to 0
       TXarray[3] = 0;  // set SOAR speed to 0
       TXarray[4] = 0;  // set SLS speed to 0
     }
     else if (onLoc > -1)
-      TXarray[1] | 0b00000001;  // set ARM bit
+      TXarray[1] |= 0b00000001;  // set ARM bit
     else
     {
       validCommand = false;
@@ -237,13 +237,13 @@ void handleCommand()
     else if (upLoc > -1)
     {
       TXarray[2] = 255;
-      TXarray[1] | 0b00000010;
+      TXarray[1] |= 0b00000010;
     }
     else if (downLoc > -1)
     {
       
       TXarray[2] = 255;
-      TXarray[1] & 0b11111101;
+      TXarray[1] &= 0b11111101;
     }
     else
     {
@@ -259,13 +259,13 @@ void handleCommand()
     else if (upLoc > -1)
     {
       TXarray[3] = 255;
-      TXarray[1] | 0b00000100;
+      TXarray[1] |= 0b00000100;
     }
     else if (downLoc > -1)
     {
       
       TXarray[3] = 255;
-      TXarray[1] & 0b11111011;
+      TXarray[1] &= 0b11111011;
     }
     else
     {
@@ -281,13 +281,13 @@ void handleCommand()
     else if (upLoc > -1)
     {
       TXarray[4] = 255;
-      TXarray[1] | 0b00001000;
+      TXarray[1] |= 0b00001000;
     }
     else if (downLoc > -1)
     {
       
       TXarray[4] = 255;
-      TXarray[1] & 0b11110111;
+      TXarray[1] &= 0b11110111;
     }
     else
     {
@@ -300,10 +300,10 @@ void handleCommand()
   {
     if (offLoc > -1)
     {
-      TXarray[1] & 0b11101111;  // clear latch bit
+      TXarray[1] &= 0b11101111;  // clear latch bit
     }
     else if (onLoc > -1)
-      TXarray[1] | 0b00010000;  // set latch bit
+      TXarray[1] |= 0b00010000;  // set latch bit
     else
     {
       validCommand = false;
