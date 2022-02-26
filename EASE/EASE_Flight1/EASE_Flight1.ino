@@ -12,10 +12,10 @@
 #include <RadioLib.h>  // include radio library
 
 // motor pins
-#define PWM_A 6 // PWM pin, motor A
-#define DIR_A 5  // Direction pin, motor A
-#define PWM_B 9  // PWM pin, motor B
-#define DIR_B 8  // Direction pin, motor B
+#define PWM_B 6 // PWM pin, motor A
+#define DIR_B 5  // Direction pin, motor A
+#define PWM_A 9  // PWM pin, motor B
+#define DIR_A 8  // Direction pin, motor B
 
 // RFM95 connections:
 #define CSPIN 10
@@ -145,30 +145,30 @@ void handleReceive()  // performs everything necessary when data comes in
 
   if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
-    Serial.println(F("[RFM95] Received packet!"));
-
-    Serial.print(F("[RFM95] Data:\t\t"));  // print data
-    Serial.print(RXarray[0]);
-    Serial.print("\t");
-    Serial.print(RXarray[1], BIN);
-    Serial.print("\t");
-    Serial.print(RXarray[2]);
-    Serial.print("\t");
-    Serial.print(RXarray[3]);
-    Serial.print("\t");
-    Serial.print(RXarray[4]);
-    Serial.print("\t");
-    Serial.print(RXarray[5]);
-    Serial.print("\t");
-    Serial.print(RXarray[6]);
-    Serial.print("\t");
-    Serial.print(RXarray[7]);
-    Serial.print("\t");
-    Serial.println(RXarray[8]);
-    
-    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
-    Serial.print(radio.getRSSI());
-    Serial.println(F(" dBm"));
+//    Serial.println(F("[RFM95] Received packet!"));
+//
+//    Serial.print(F("[RFM95] Data:\t\t"));  // print data
+//    Serial.print(RXarray[0]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[1], BIN);
+//    Serial.print("\t");
+//    Serial.print(RXarray[2]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[3]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[4]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[5]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[6]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[7]);
+//    Serial.print("\t");
+//    Serial.println(RXarray[8]);
+//    
+//    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
+//    Serial.print(radio.getRSSI());
+//    Serial.println(F(" dBm"));
    
     controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
 
@@ -177,13 +177,13 @@ void handleReceive()  // performs everything necessary when data comes in
       controls[1] *= -1;
       
   }
-  else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
-    Serial.println(F("[RFM95] CRC error!"));
-  else  // some other error
-  {
-    Serial.print(F("[RFM95] Failed, code "));
-    Serial.println(receiveState);
-  }
+//  else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
+//    Serial.println(F("[RFM95] CRC error!"));
+//  else  // some other error
+//  {
+//    Serial.print(F("[RFM95] Failed, code "));
+//    Serial.println(receiveState);
+//  }
 }
 
 void transmitData()  // this function just retransmits the received array with a new system address
@@ -194,17 +194,22 @@ void transmitData()  // this function just retransmits the received array with a
   txComplete = false;
   transmitTimer = millis();  // reset transmit timer
   
-  Serial.println(F("[RFM95] Sending array ... "));
+//  Serial.println(F("[RFM95] Sending array ... "));
   transmitState = radio.startTransmit(RXarray, 9);  // transmit array
   digitalWrite(LED_2, HIGH);  // LED 2 on while transmit mode is active
 }
 
 void setMotor()
 {
-  if(controls[0] > 0)  // speed is positive
-    digitalWrite(DIR_A, HIGH);
+  if(controls[0])
+  {
+    if(controls[1] > 0)  // speed is positive
+      digitalWrite(DIR_A, HIGH);
+    else
+      digitalWrite(DIR_A, LOW);
+      
+    analogWrite(PWM_A, abs(controls[1]));
+  }
   else
-    digitalWrite(DIR_A, LOW);
-    
-  analogWrite(PWM_A, abs(controls[0]));
+    analogWrite(PWM_A, 0);
 }
