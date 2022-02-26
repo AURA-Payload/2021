@@ -12,6 +12,7 @@ void setup() {
   // initialize the digital pin as an output.
   pinMode(led, OUTPUT);
   pinMode(led2, OUTPUT);
+  Serial.begin(9600);
 }
 
 // the loop routine runs over and over again forever:
@@ -22,4 +23,5 @@ void loop() {
   digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
   digitalWrite(led2, HIGH);
   delay(1000);               // wait for a second
+  Serial.println("helllo");
 }
