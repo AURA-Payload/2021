@@ -1,0 +1,31 @@
+This document describes the packets of the MARCO-EASE-SOAR-POLO system
+
+----- PACKET DESCRIPTION -----
+One packet is transmitted by each system. When a system receives a packet, it will check the system address to determine what parts of the packet are relevant.
+Parts of this packet mean different things when sent from different systems.
+For example, MARCO sending a 1 for byte1, bit0 indicates that the system should arm.
+SOAR sending a 1 for byte1, bit0 indicates that the system is currently armed.
+
+Byte 0 - System address (0 = MARCO, 1 = EASE, 2 = SOAR, 3 = POLO)
+
+Byte 1 - Binary statuses
+  Bit 0 - Armed/disarmed
+  Bit 1 - EASE dir
+  Bit 2 - SLS dir
+  Bit 3 - SLS latch (open/close)
+  Bit 4 - LEGS state (retracted/SOAR controlled)
+  Bit 5 - POLO levelling (fixed servo/accelerometer controlled)
+  Bit 6 - Direction find (in)active
+  Bit 7 - Rangefind (in)active
+  
+Byte 2 - EASE speed
+
+Byte 3 - SLS speed
+
+Byte 4 - Leg 1 angle
+
+Byte 5 - Leg 2 angle
+
+Byte 6 - Leg 3 angle
+
+Byte 7 - Leg 4 angle
