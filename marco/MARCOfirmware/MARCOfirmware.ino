@@ -10,7 +10,7 @@
     "ease" + "up" or "down" or "off"
     "soar" + "up" or "down" or "off"
     "sls" + "up" or "down" or "off"
-    "latch" + "on" or "off"
+    "latch" + "up" or "down"
   -------------------------------------------------------------*/
   
 #include <RadioLib.h>  // radio library
@@ -90,13 +90,14 @@ void loop()
 
     if(transmitFlag)  // last action was transmit
     {
-      if (transmitState == RADIOLIB_ERR_NONE)  // if transmission completed successsfully
-        Serial.println(F("transmission finished"));
-      else  // if transmission failed
+      if (transmitState != RADIOLIB_ERR_NONE)  // if transmission failed
       {
         Serial.print(F("transmission failed, code "));
         Serial.println(transmitState);
       }
+//      else  // if transmission good
+//        Serial.println(F("transmission finished"));
+      
 
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
@@ -108,9 +109,9 @@ void loop()
 
       if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
       {
-        Serial.println(F("[SX1276] Received packet!"));
-  
-        Serial.print("Received: ");
+//        Serial.println(F("[SX1276] Received packet!"));
+//  
+        Serial.print("   Received: ");
         Serial.print(RXarray[0]);
         Serial.print(", ");
         Serial.print(RXarray[1], BIN);
@@ -127,7 +128,7 @@ void loop()
         Serial.print(", ");
         Serial.print(RXarray[7]);
         Serial.print(", ");
-        Serial.println(RXarray[8]);
+        Serial.print(RXarray[8]);
   
         // print RSSI (Received Signal Strength Indicator)
         Serial.print(F("\t[SX1276] RSSI: "));
@@ -148,7 +149,10 @@ void loop()
   }
 
   if(txComplete && (newCommand || (millis() >= transmitTimer + transmitInterval)))  // if the TX interval has passed and last TX is done
+  {
+    newCommand = false;
     transmitData();
+  }
 }
 
 void serialEvent()
@@ -175,7 +179,7 @@ void transmitData()
   txComplete = false;
   transmitState = radio.startTransmit(TXarray, 9);  // transmit array
 
-  Serial.print("Transmitting: ");
+  Serial.print("Transmitted: ");
   Serial.print(TXarray[0]);
   Serial.print(", ");
   Serial.print(TXarray[1], BIN);
@@ -222,7 +226,12 @@ void handleCommand()
       TXarray[4] = 0;  // set SLS speed to 0
     }
     else if (onLoc > -1)
+    {
       TXarray[1] |= 0b00000001;  // set ARM bit
+      TXarray[2] = 0;  // set EASE speed to 0
+      TXarray[3] = 0;  // set SOAR speed to 0
+      TXarray[4] = 0;  // set SLS speed to 0
+    }
     else
     {
       validCommand = false;
@@ -298,11 +307,11 @@ void handleCommand()
   
   else if (latchLoc > -1)
   {
-    if (offLoc > -1)
+    if (upLoc > -1)
     {
       TXarray[1] &= 0b11101111;  // clear latch bit
     }
-    else if (onLoc > -1)
+    else if (downLoc > -1)
       TXarray[1] |= 0b00010000;  // set latch bit
     else
     {
