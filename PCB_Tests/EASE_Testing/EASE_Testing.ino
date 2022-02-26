@@ -88,8 +88,7 @@ void setup()
     Serial.print(F("failed, code "));  // print error code
     Serial.println(receiveState);
   }
-
-  radio.setDio0Action(setFlag);  // function that will be called when something is done
+  
   // ----- END RADIO SETUP -----
 
   // ----- ADXL345 ACCELEROMETER SETUP -----
