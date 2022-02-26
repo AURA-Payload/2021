@@ -30,25 +30,37 @@ unsigned int transmitTimer = 0;  // stores the time of the last transmission
 unsigned int transmitInterval = 2500;  // milliseconds between tranmissions
 
 // receive array
-byte RXarray[7];  // stores received array
+byte RXarray[9];  // stores received array
 
 // radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
 int receiveState = RADIOLIB_ERR_NONE;  // saves radio state when receiving
-volatile bool enableInterrupt = true;  // disables interrupt when not needed
+bool enableInterrupt = true;  // disables interrupt when not needed
 volatile bool operationDone = false;  // indicates an operation is complete
 bool transmitFlag = false;  // indicates the last operation was transmission
 bool txComplete = true;  // indicates the last transmission is done
 int lastRSSI = 0;  // saves RSSI to be transmitted
 
 // control variables
-int controls[] = {0, 0, 0, 0}; // stores motor values and datalog flag
+int controls[] = {0, 0, 0}; // stores arm flag and motor values
 
 void setup()
 {
+  pinMode(LED_1, OUTPUT);
+  pinMode(LED_2, OUTPUT);
+  pinMode(PWM_A, OUTPUT);
+  pinMode(DIR_A, OUTPUT);
+  pinMode(PWM_B, OUTPUT);
+  pinMode(DIR_B, OUTPUT);
+
+  pinMode(LIMIT_1, INPUT_PULLUP);
+  pinMode(LIMIT_2, INPUT_PULLUP);
 
   Serial.begin(115200);
   delay(250);
+
+  digitalWrite(DIR_B, LOW);  // disable motor B, we don't need it
+  digitalWrite(PWM_B, LOW);
 
   // ----- BEGIN RADIO SETUP -----
   // initialize RFM95 with all settings listed
@@ -58,14 +70,23 @@ void setup()
                              9,  // spreading factor
                              7,  // coding rate
                              0x12,  // sync word
-                             20,  // output power (dBm)
+                             17,  // output power (dBm)
                              8,  // preamble length (symbols)
                              0);  // gain (0 is automatic control)
   radio.setCRC(true);  // enables cyclic redundancy check
   delay(500);
 
   if (receiveState == RADIOLIB_ERR_NONE)  // if radio initialized correctly
+  {
     Serial.println(F("init success!"));
+    for(int l=0; l < 3; l++)
+    {
+      digitalWrite(LED_1, HIGH);
+      delay(100);
+      digitalWrite(LED_1, LOW);
+      delay(100);
+    }
+  }
   else
   {
     Serial.print(F("failed, code "));  // print error code
@@ -78,7 +99,7 @@ void setup()
   receiveState = radio.startReceive();  // start listening
   // ----- END RADIO SETUP -----
 
-  setMotors();  // sets the motors based on controls array
+  setMotor();  // sets the motors based on controls array
 }
 
 void loop()
@@ -86,6 +107,8 @@ void loop()
 
   if(operationDone)  // if the last operation is finished
   {
+    digitalWrite(LED_1, LOW);  // No LEDs in between modes
+    digitalWrite(LED_2, LOW);  // No LEDs in between modes
     enableInterrupt = false;  // disable the interrupt
     operationDone = false;  // reset completion flag
 
@@ -94,12 +117,14 @@ void loop()
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
       receiveState = radio.startReceive();  // start receiving again
+      digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
     }
 
     else  // last action was receive
     {
       handleReceive();  // this stores received data to RXarray and saves RSSI
-      setMotors();  // sets the motors based on controls array
+      setMotor();  // sets the motors based on controls array
+      delay(10);
       transmitData();  // send a message back to GS
     }
     enableInterrupt = true;  // reenable the interrupt
@@ -116,83 +141,65 @@ void setFlag(void)  // this function is called after complete packet transmissio
 
 void handleReceive()  // performs everything necessary when data comes in
 {
-  receiveState = radio.readData(RXarray, 7);  // read received data to array
+  receiveState = radio.readData(RXarray, 9);  // read received data to array
 
   if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
-//    Serial.println(F("[RFM95] Received packet!"));
-//
-//    Serial.print(F("[RFM95] Data:\t\t"));  // print data
-//    Serial.print(RXarray[0]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[1]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[2]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[3]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[4]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[5]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[6]);
-    
-    lastRSSI = radio.getRSSI();  // get RSSI to be reported
-    
-//    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
-//    Serial.print(lastRSSI);
-//    Serial.println(F(" dBm"));
-   
-    if(RXarray[0])
-      controls[0] = -1 * RXarray[1];
-    else
-      controls[0] = RXarray[1];
-    
-    if(RXarray[2])
-      controls[1] = -1 * RXarray[3];
-    else
-      controls[1] = RXarray[3];
-    
-    if(RXarray[4])
-      controls[2] = -1 * RXarray[5];
-    else
-      controls[2] = RXarray[5];
+    Serial.println(F("[RFM95] Received packet!"));
 
-    controls[3] = RXarray[6];
+    Serial.print(F("[RFM95] Data:\t\t"));  // print data
+    Serial.print(RXarray[0]);
+    Serial.print("\t");
+    Serial.print(RXarray[1], BIN);
+    Serial.print("\t");
+    Serial.print(RXarray[2]);
+    Serial.print("\t");
+    Serial.print(RXarray[3]);
+    Serial.print("\t");
+    Serial.print(RXarray[4]);
+    Serial.print("\t");
+    Serial.print(RXarray[5]);
+    Serial.print("\t");
+    Serial.print(RXarray[6]);
+    Serial.print("\t");
+    Serial.print(RXarray[7]);
+    Serial.print("\t");
+    Serial.println(RXarray[8]);
+    
+    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
+    Serial.print(radio.getRSSI());
+    Serial.println(F(" dBm"));
+   
+    controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
+
+    controls[1] = RXarray[2];  // motor speed from RXarray
+    if(~RXarray[1] & 0b00000010)  // if direction bit is not set
+      controls[1] *= -1;
+      
   }
-//  else if (receiveState == ERR_CRC_MISMATCH)  // packet received malformed
-//    Serial.println(F("[RFM95] CRC error!"));
-//  else  // some other error
-//  {
-//    Serial.print(F("[RFM95] Failed, code "));
-//    Serial.println(receiveState);
-//  }
+  else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
+    Serial.println(F("[RFM95] CRC error!"));
+  else  // some other error
+  {
+    Serial.print(F("[RFM95] Failed, code "));
+    Serial.println(receiveState);
+  }
 }
 
-void transmitData()
+void transmitData()  // this function just retransmits the received array with a new system address
 {
-  String telemetryString = "";
-  
-  telemetryString += String(controls[0]);
-  telemetryString += ", ";
-  telemetryString += String(controls[1]);
-  telemetryString += ", ";
-  telemetryString += String(controls[2]);
-  telemetryString += ", ";
-  telemetryString += String(controls[3]);
-  telemetryString += ", ";
-  telemetryString += String(lastRSSI);
-  telemetryString += "dBm\n";
+  RXarray[0] = 1;  // set EASE's system address
   
   transmitFlag = true;
   txComplete = false;
   transmitTimer = millis();  // reset transmit timer
   
-  //Serial.println(F("[RFM95] Sending string ... "));
-  transmitState = radio.startTransmit(telemetryString);  // transmit array 1
+  Serial.println(F("[RFM95] Sending array ... "));
+  transmitState = radio.startTransmit(RXarray, 9);  // transmit array
+  digitalWrite(LED_2, HIGH);  // LED 2 on while transmit mode is active
 }
 
-void setMotors()
+void setMotor()
 {
   if(controls[0] > 0)  // speed is positive
     digitalWrite(DIR_A, HIGH);
@@ -200,11 +207,4 @@ void setMotors()
     digitalWrite(DIR_A, LOW);
     
   analogWrite(PWM_A, abs(controls[0]));
-  
-  if(controls[1] > 0)  // speed is positive
-    digitalWrite(DIR_B, HIGH);
-  else
-    digitalWrite(DIR_B, LOW);
-    
-  analogWrite(PWM_B, abs(controls[1]));
 }
