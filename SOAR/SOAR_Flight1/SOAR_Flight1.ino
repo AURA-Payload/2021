@@ -40,8 +40,8 @@ float lastAccel = 0;  // stores previous acceleration value
 float accelThreshold = 55;  // acceleration spike threshold value
 float altThreshold = 25;  // altitude threshold considered "on the ground"
 unsigned int launchTime = 0;  // saves the start of the launch acceleration
-bool isLaunched = 0;  // flag for when launch has occurred
-bool isLanded = 0;
+bool isLaunched = false;  // flag for when launch has occurred
+bool isLanded = false;
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -140,7 +140,7 @@ void setup()
 
   setMotors();  // sets the motors based on controls array
 
-  while(bmpStart + 5000 > millis())  // wait until the BMP has been on for 30s
+  while(bmpStart + 30000 > millis())  // wait until the BMP has been on for 30s
     delay(10);
   
   BMPcal = bmp.readAltitude(LOCALPRESSURE);

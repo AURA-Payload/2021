@@ -58,9 +58,6 @@ void setup()
   Serial.begin(115200);
   delay(250);
 
-  digitalWrite(DIR_B, LOW);  // disable motor B, we don't need it
-  digitalWrite(PWM_B, LOW);
-
   // ----- BEGIN RADIO SETUP -----
   // initialize RFM95 with all settings listed
   Serial.print(F("[RFM95] Initializing ... "));
@@ -115,7 +112,7 @@ void loop()
     {
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
-      receiveState = radio.startReceive();  // start receiving again
+      //receiveState = radio.startReceive();  // start receiving again
       digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
     }
 
@@ -126,6 +123,7 @@ void loop()
       delay(10);
       //transmitData();  // send a message back to GS
     }
+    receiveState = radio.startReceive();  // start receiving again
     enableInterrupt = true;  // reenable the interrupt
   }
 }
@@ -144,30 +142,30 @@ void handleReceive()  // performs everything necessary when data comes in
 
   if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
-//    Serial.println(F("[RFM95] Received packet!"));
-//
-//    Serial.print(F("[RFM95] Data:\t\t"));  // print data
-//    Serial.print(RXarray[0]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[1], BIN);
-//    Serial.print("\t");
-//    Serial.print(RXarray[2]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[3]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[4]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[5]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[6]);
-//    Serial.print("\t");
-//    Serial.print(RXarray[7]);
-//    Serial.print("\t");
-//    Serial.println(RXarray[8]);
-//    
-//    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
-//    Serial.print(radio.getRSSI());
-//    Serial.println(F(" dBm"));
+    Serial.println(F("[RFM95] Received packet!"));
+
+    Serial.print(F("[RFM95] Data:\t\t"));  // print data
+    Serial.print(RXarray[0]);
+    Serial.print("\t");
+    Serial.print(RXarray[1], BIN);
+    Serial.print("\t");
+    Serial.print(RXarray[2]);
+    Serial.print("\t");
+    Serial.print(RXarray[3]);
+    Serial.print("\t");
+    Serial.print(RXarray[4]);
+    Serial.print("\t");
+    Serial.print(RXarray[5]);
+    Serial.print("\t");
+    Serial.print(RXarray[6]);
+    Serial.print("\t");
+    Serial.print(RXarray[7]);
+    Serial.print("\t");
+    Serial.println(RXarray[8]);
+    
+    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
+    Serial.print(radio.getRSSI());
+    Serial.println(F(" dBm"));
    
     controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
 
@@ -202,13 +200,23 @@ void setMotor()
 {
   if(controls[0])
   {
-    if(controls[1] > 0)  // speed is positive
+    if(controls[1] < 0)  // speed is negative
+    {
       digitalWrite(DIR_A, HIGH);
+      digitalWrite(DIR_B, HIGH);
+    }
     else
+    {
       digitalWrite(DIR_A, LOW);
+      digitalWrite(DIR_B, LOW);
+    }
       
     analogWrite(PWM_A, abs(controls[1]));
+    analogWrite(PWM_B, abs(controls[1]));
   }
   else
+  {
     analogWrite(PWM_A, 0);
+    analogWrite(PWM_B, 0);
+  }
 }
