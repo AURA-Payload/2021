@@ -5,8 +5,8 @@
   "
   -------------------------------------------------------------*/
 #define LOCALPRESSURE 1028.1    // used to calculate altitude (in millibar)
-#define LED_1 22
-#define LED_2 23
+#define LED_2 22
+#define LED_1 23
 #define LIMIT_1 20
 #define LIMIT_2 21
 
@@ -34,6 +34,14 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);  // sensor obj
 Adafruit_BMP280 bmp; // BMP connected I2C
 
 float BMPcal = 0;  // initial calibration value (ground level)
+float currentAlt = 0;
+float Xaccel = 0;  // x acceleration value is stored here
+float lastAccel = 0;  // stores previous acceleration value
+float accelThreshold = 55;  // acceleration spike threshold value
+float altThreshold = 25;  // altitude threshold considered "on the ground"
+unsigned int launchTime = 0;  // saves the start of the launch acceleration
+bool isLaunched = false;  // flag for when launch has occurred
+bool isLanded = false;
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -66,6 +74,8 @@ void setup()
   pinMode(LIMIT_1, INPUT);
   pinMode(LIMIT_2, INPUT);
 
+  digitalWrite(LED_2, HIGH);
+
   Serial.begin(115200);
   Wire.begin();
   delay(250);
@@ -76,7 +86,7 @@ void setup()
   else
     Serial.println("BMP280 initialized");
 
-  int bmpStart = millis();
+  unsigned int bmpStart = millis();
 
   bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
                   Adafruit_BMP280::SAMPLING_X2,
@@ -140,10 +150,38 @@ void setup()
   
   Serial.println("Listening for packets");
   receiveState = radio.startReceive();  // start listening
+  digitalWrite(LED_2, LOW);
 }
 
 void loop()
 {
+  lastAccel = Xaccel;
+  sensors_event_t event;  // get ADXL345 data
+  accel.getEvent(&event);
+  Xaccel = abs(event.acceleration.x);  // store acceleration
+  //Serial.println(Xaccel);
+
+  if(Xaccel > accelThreshold)
+  {
+    if(!isLaunched)
+    {
+      if((lastAccel > accelThreshold))
+      {
+        if(launchTime + 2500 < millis())
+          isLaunched = true;
+      }
+      else
+        launchTime = millis();
+    }
+    else if(!isLanded)
+    {
+      currentAlt = bmp.readAltitude(LOCALPRESSURE) - BMPcal;
+      if(abs(currentAlt) < 20)
+        isLanded = true;
+    }
+    else
+      digitalWrite(LED_2, HIGH);
+  }
 
   if(operationDone)  // if the last operation is finished
   {
@@ -232,6 +270,8 @@ void handleReceive()  // performs everything necessary when data comes in
 void transmitData()  // this function just retransmits the received array with a new system address
 {
   RXarray[0] = 2;  // set SOAR's system address
+  RXarray[7] = isLaunched;  // notify team if launch is detected
+  RXarray[8] = isLanded;
   
   transmitFlag = true;
   txComplete = false;

@@ -289,13 +289,12 @@ void handleCommand()
       TXarray[4] = 0;
     else if (upLoc > -1)
     {
-      TXarray[4] = 255;
+      TXarray[4] = 200;
       TXarray[1] |= 0b00001000;
     }
     else if (downLoc > -1)
     {
-      
-      TXarray[4] = 255;
+      TXarray[4] = 200;
       TXarray[1] &= 0b11110111;
     }
     else
