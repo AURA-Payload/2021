@@ -4,7 +4,8 @@
 
 int screwLength = .125; //inches
 int gearRatio = 340; //gearRatio * rotationsOfScrew = rotationsOfMotor
-int rotations = 0;
+int pulsePerRotate = 12;
+int pulseCount = 0;
 int extended = 0; //0 for false, 1 for true. 
 
 void setup() {
@@ -25,8 +26,8 @@ void loop() {
 }
 
 void count() {
-  rotations++;
-  if(rotations/(gearRatio * 8) >= screwLength){ //Check to see if fully extended. If so, set extended. 
+  pulseCount++;
+  if(pulseCount/(gearRatio * pulsePerRotate * 8) >= screwLength){ //Check to see if fully extended. If so, set extended. 
     extended = 1;
   }
 }
