@@ -1,5 +1,3 @@
-
-
 #define BIT3 8
 #define BIT2 17
 #define BIT1 20
@@ -10,7 +8,8 @@
 
 int lowestLight = 9999;
 int lowestSensor[5]; 
-int sensor[4] = {1, 1, 1, 1};
+byte sensor[4] = {1, 1, 1, 1};
+int sensorValues[32];
 int i = 0;
 
 void setup() {
@@ -34,21 +33,28 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  while(i < 16){
+  while(i < 16)
+  {
     //Update the array for sensors
-    if(i % 8 == 0){   //On every 8th value, flip 1st bit
+    if(i % 8 == 0)   //On every 8th value, flip 1st bit
       sensorSwitch(0);
-    }
-    if(i % 4 == 0){   //On every 4th value, flip 2nd bit
+      
+    if(i % 4 == 0)   //On every 4th value, flip 2nd bit
       sensorSwitch(1);
-    }
-    if(i % 2 == 0){   //On every other value, flip 3rd bit
+      
+    if(i % 2 == 0)   //On every other value, flip 3rd bit
       sensorSwitch(2);
-    }
+      
     sensorSwitch(3);  //Flip last bit on every value
     sensorUpdate();
     readAnalog();
     i++;
+  }
+
+  for(int printLoop = 0; printLoop < 32; printLoop++)
+  {
+    Serial.print(sensorValues[printLoop]);
+    Serial.print(",");
   }
   Serial.println();
   //Print lowest light value - where shadow is
@@ -61,21 +67,24 @@ void loop() {
   sensor[1] = 0;
   sensor[2] = 0;
   sensor[3] = 0;
+
+  delay(25);
 }
 
 
 void sensorSwitch(int index){
   //If sensor value is 1, make 0, and vice versa 
-  if(sensor[index] == 1){
+  /*if(sensor[index] == 1){
     sensor[index] = 0;
   }
   else{
     sensor[index] = 1;
-  }
+  }*/
+  sensor[index] = !sensor[index];  // i believe this will work and have less latency
 }
 
 void sensorUpdate(void) {
-  //Update the actual sensors
+  // writes the 4 bit number to the multiplexers
   bool val;
   val = sensor[0];
   digitalWrite(BIT0, val);
@@ -90,16 +99,19 @@ void sensorUpdate(void) {
   digitalWrite(BIT3, val);
 }
 
-void readAnalog(void) {
+void readAnalog() {
   //Read analog sensor values, print, also track lowest value and which sensor is reading it.
-  int sensorValue1 = analogRead(A9);
+  /*int sensorValue1 = analogRead(A9);
   int sensorValue2 = analogRead(A8);
   Serial.print(sensorValue1);
   Serial.print("  ");
   Serial.print(sensorValue2);
-  Serial.print("  ");
+  Serial.print("  ");*/
+
+  sensorValues[i] = analogRead(A9);  // read the values into an array
+  sensorValues[i + 16] = analogRead(A8);
   
-  if(sensorValue1 < lowestLight){
+  /*if(sensorValue1 < lowestLight){
     lowestLight = sensorValue1;
     for(int j = 4; j < 4; j++){
       lowestSensor[i] = sensor[i];
@@ -113,7 +125,7 @@ void readAnalog(void) {
       lowestSensor[i] = sensor[i];
     }
     lowestSensor[4] = 8;  //Identifies which analog sensor
-  }
+  }*/
 }
 
 void printSensorArray(){
