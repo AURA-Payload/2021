@@ -11,6 +11,7 @@
 int lowestLight = 9999;
 int lowestSensor[5]; 
 int sensor[4] = {1, 1, 1, 1};
+int sensorValues[32];
 int i = 0;
 
 void setup() {
@@ -50,7 +51,13 @@ void loop() {
     readAnalog();
     i++;
   }
-  Serial.println();
+
+  for(int printLoop = 0; printLoop < 32; printLoop++)
+  {
+    Serial.print(sensorValues[printLoop]);
+    Serial.print(",");
+  }
+  Serial.print('\n');
   //Print lowest light value - where shadow is
   //Serial.print("\nLowest Light Sensor: ");
   //printSensorArray();
@@ -61,6 +68,8 @@ void loop() {
   sensor[1] = 0;
   sensor[2] = 0;
   sensor[3] = 0;
+
+  while(millis() > 15000);
 }
 
 
@@ -92,14 +101,17 @@ void sensorUpdate(void) {
 
 void readAnalog(void) {
   //Read analog sensor values, print, also track lowest value and which sensor is reading it.
-  int sensorValue1 = analogRead(A9);
+  /*int sensorValue1 = analogRead(A9);
   int sensorValue2 = analogRead(A8);
   Serial.print(sensorValue1);
   Serial.print("  ");
   Serial.print(sensorValue2);
-  Serial.print("  ");
+  Serial.print("  ");*/
+
+  sensorValues[i] = analogRead(A9);  // read the values into an array
+  sensorValues[i + 16] = analogRead(A8);
   
-  if(sensorValue1 < lowestLight){
+  /*if(sensorValue1 < lowestLight){
     lowestLight = sensorValue1;
     for(int j = 4; j < 4; j++){
       lowestSensor[i] = sensor[i];
@@ -113,7 +125,7 @@ void readAnalog(void) {
       lowestSensor[i] = sensor[i];
     }
     lowestSensor[4] = 8;  //Identifies which analog sensor
-  }
+  }*/
 }
 
 void printSensorArray(){
