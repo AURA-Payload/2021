@@ -1,10 +1,4 @@
-#define LOCALPRESSURE 1016.8  // used to calculate altitude
 
-#include <RadioLib.h>  // include radio library
-#include <SdFat.h>  // include SD library
-#include <Wire.h>
-#include <LSM6.h>
-#include <LPS.h>
 
 #define BIT3 8
 #define BIT2 17
@@ -56,10 +50,11 @@ void loop() {
     readAnalog();
     i++;
   }
+  Serial.println();
   //Print lowest light value - where shadow is
-  Serial.print("\nLowest Light Sensor: ");
-  printSensorArray();
-  Serial.print("\nValue: " + lowestLight);
+  //Serial.print("\nLowest Light Sensor: ");
+  //printSensorArray();
+  //Serial.print("\nValue: " + lowestLight);
   //Reset loop
   i = 0;
   sensor[0] = 0;
@@ -99,8 +94,10 @@ void readAnalog(void) {
   //Read analog sensor values, print, also track lowest value and which sensor is reading it.
   int sensorValue1 = analogRead(A9);
   int sensorValue2 = analogRead(A8);
-  Serial.println(sensorValue1);
-  Serial.println(sensorValue2);
+  Serial.print(sensorValue1);
+  Serial.print("  ");
+  Serial.print(sensorValue2);
+  Serial.print("  ");
   
   if(sensorValue1 < lowestLight){
     lowestLight = sensorValue1;
