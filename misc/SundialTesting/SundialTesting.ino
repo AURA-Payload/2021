@@ -1,16 +1,16 @@
-
-
-#define BIT3 8
-#define BIT2 17
-#define BIT1 20
-#define BIT0 21
+#define BIT0 8
+#define BIT1 17
+#define BIT2 20
+#define BIT3 21
 
 #define TIME1 A9
 #define TIME2 A8
 
 int lowestLight = 9999;
-int lowestSensor[5]; 
-int sensor[4] = {1, 1, 1, 1};
+int lowestSensor[5];
+byte sensorSelect = 0b00000000;  // this will serve to select the correct light sensor
+bool val;
+//int sensorSelect[4] = {0, 0, 0, 0};  // THIS IS SET UP TO BE LSB TO MSB - THIS MEANS sensorSelect[0] = BIT0 = LSB
 int sensorValues[32];
 int i = 0;
 
@@ -26,30 +26,38 @@ void setup() {
   pinMode(TIME1, INPUT);
   pinMode(TIME2, INPUT);
 
-  digitalWrite(BIT0, 0);
-  digitalWrite(BIT1, 0);
-  digitalWrite(BIT2, 0);
-  digitalWrite(BIT3, 0);
+  
+  /*digitalWrite(BIT0, sensorSelect[0]);
+  digitalWrite(BIT1, sensorSelect[1]);
+  digitalWrite(BIT2, sensorSelect[2]);
+  digitalWrite(BIT3, sensorSelect[3]);*/
 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  while(i < 16){
+  /*while(i < 16){
     //Update the array for sensors
-    if(i % 8 == 0){   //On every 8th value, flip 1st bit
-      sensorSwitch(0);
+    if(i % 8 == 0){   //On every 8th cycle, flip MSB
+      sensorSwitch(3);
     }
-    if(i % 4 == 0){   //On every 4th value, flip 2nd bit
-      sensorSwitch(1);
-    }
-    if(i % 2 == 0){   //On every other value, flip 3rd bit
+    if(i % 4 == 0){   //On every 4th cycle, flip bit 2
       sensorSwitch(2);
     }
-    sensorSwitch(3);  //Flip last bit on every value
+    if(i % 2 == 0){   //On every other cycle, flip bit 1
+      sensorSwitch(1);
+    }
+    sensorSwitch(0);  //Flip LSB on every cycle
     sensorUpdate();
     readAnalog();
     i++;
+  }*/
+
+  while(sensorSelect < 16){
+    //Update the array for sensors
+    sensorUpdate();
+    readAnalog();
+    sensorSelect++;
   }
 
   for(int printLoop = 0; printLoop < 32; printLoop++)
@@ -63,40 +71,47 @@ void loop() {
   //printSensorArray();
   //Serial.print("\nValue: " + lowestLight);
   //Reset loop
-  i = 0;
-  sensor[0] = 0;
-  sensor[1] = 0;
-  sensor[2] = 0;
-  sensor[3] = 0;
-
-  while(millis() > 15000);
+  /*i = 0;
+  sensorSelect[0] = 0;
+  sensorSelect[1] = 0;
+  sensorSelect[2] = 0;
+  sensorSelect[3] = 0;*/
+  sensorSelect = 0;
 }
 
 
-void sensorSwitch(int index){
+/*void sensorSwitch(int index){
   //If sensor value is 1, make 0, and vice versa 
-  if(sensor[index] == 1){
-    sensor[index] = 0;
+  if(sensorSelect[index] == 1){
+    sensorSelect[index] = 0;
   }
   else{
-    sensor[index] = 1;
+    sensorSelect[index] = 1;
   }
-}
+}*/
 
 void sensorUpdate(void) {
+  val = sensorSelect & 0b00000001; // set LSB
+  digitalWrite(BIT0, val);
+  val = sensorSelect & 0b00000010;  // set bit 1
+  digitalWrite(BIT1, val);
+  val = sensorSelect & 0b00000100;  // set bit 2
+  digitalWrite(BIT2, val);
+  val = sensorSelect & 0b00001000;  // set MSB
+  digitalWrite(BIT3, val);
+  
   //Update the actual sensors
-  bool val;
-  val = sensor[0];
+  /*val = sensorSelect[0];
   digitalWrite(BIT0, val);
 
-  val = sensor[1];
+  val = sensorSelect[1];
   digitalWrite(BIT1, val);
 
-  val = sensor[2];
+  val = sensorSelect[2];
   digitalWrite(BIT2, val);
 
-  val = sensor[3];
-  digitalWrite(BIT3, val);
+  val = sensorSelect[3];
+  digitalWrite(BIT3, val);*/
 }
 
 void readAnalog(void) {
@@ -108,8 +123,11 @@ void readAnalog(void) {
   Serial.print(sensorValue2);
   Serial.print("  ");*/
 
-  sensorValues[i] = analogRead(A9);  // read the values into an array
-  sensorValues[i + 16] = analogRead(A8);
+  //sensorValues[i] = analogRead(A8);  // read the values into an array
+  //sensorValues[i + 16] = analogRead(A9);
+
+  sensorValues[sensorSelect] = analogRead(A9);  // read the values into an array
+  sensorValues[sensorSelect + 16] = analogRead(A8);
   
   /*if(sensorValue1 < lowestLight){
     lowestLight = sensorValue1;
