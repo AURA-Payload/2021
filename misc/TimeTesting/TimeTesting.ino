@@ -5,7 +5,7 @@ int sensorVals[32] = {00000, 00001, 00010, 00011, 00100, 00101, 00110, 00111, 01
 
 void setup() {
   // put your setup code here, to run once:
-  setSyncProvider(getTeensy3Time);  // I believe this syncs the Teensy's 2 RTCs
+  setSyncProvider(getTeensy3Time);  // I believe this syncs both RTCs on the Teensy
   
   Serial.begin(115200);
   while (!Serial);  // Wait for Arduino Serial Monitor to open
