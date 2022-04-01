@@ -4,9 +4,8 @@
 
 #define ENCA 2 // YELLOW
 #define ENCB 3 // WHITE
-#define PWM 5
-#define IN2 6
-#define IN1 7
+#define PWM_1 5
+#define DIR_1 4
 
 volatile int posi = 0; // specify posi as volatile: https://www.arduino.cc/reference/en/language/variables/variable-scope-qualifiers/volatile/
 long prevT = 0;
@@ -14,14 +13,13 @@ float eprev = 0;
 float eintegral = 0;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(ENCA,INPUT);
   pinMode(ENCB,INPUT);
   attachInterrupt(digitalPinToInterrupt(ENCA),readEncoder,RISING);
   
-  pinMode(PWM,OUTPUT);
-  pinMode(IN1,OUTPUT);
-  pinMode(IN2,OUTPUT);
+  pinMode(PWM_1,OUTPUT);
+  pinMode(DIR_1,OUTPUT);
   
   Serial.println("target pos");
 }
@@ -73,7 +71,7 @@ void loop() {
   }
 
   // signal the motor
-  setMotor(dir,pwr,PWM,IN1,IN2);
+  setMotor(dir,pwr,PWM_1,DIR_1);
 
 
   // store previous error
@@ -85,44 +83,20 @@ void loop() {
   Serial.println();
 }
 
-void setMotor(int dir, int pwmVal, int pwm, int in1, int in2){
-  analogWrite(pwm,pwmVal);
-  if(dir == 1){
-    digitalWrite(in1,HIGH);
-    digitalWrite(in2,LOW);
-  }
-  else if(dir == -1){
-    digitalWrite(in1,LOW);
-    digitalWrite(in2,HIGH);
-  }
-  else{
-    digitalWrite(in1,LOW);
-    digitalWrite(in2,LOW);
-  }  
+void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
+  analogWrite(pwmPin,pwmVal);
+  
+  if(dir == 1)
+    digitalWrite(dirPin,HIGH);
+  else
+    digitalWrite(dirPin,LOW);
 }
 
 void readEncoder(){
-  int b = digitalRead(ENCB);
-  if(b > 0){
+  if(digitalRead(ENCB) > 0){
     posi++;
   }
   else{
     posi--;
   }
 }
-
-    © 2022 GitHub, Inc.
-
-    Terms
-    Privacy
-    Security
-    Status
-    Docs
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
-
-Loading complete
