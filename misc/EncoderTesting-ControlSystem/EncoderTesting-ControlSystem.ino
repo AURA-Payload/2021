@@ -8,9 +8,15 @@
 #define DIR_1 4
 
 volatile int posi = 0; // specify posi as volatile: https://www.arduino.cc/reference/en/language/variables/variable-scope-qualifiers/volatile/
-long prevT = 0;
-float eprev = 0;
-float eintegral = 0;
+unsigned long prevT = 0;
+double eprev = 0;
+double eintegral = 0;
+
+int target = 0;
+int printerval = 5;  // millisecond interval to print values
+int targetInterval = 1000;  // 2.5 seconds between switching targets
+unsigned long printTime = 0;
+unsigned long targetSwitch = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -22,22 +28,32 @@ void setup() {
   pinMode(DIR_1,OUTPUT);
   
   Serial.println("target pos");
+  delay(2000);
 }
 
 void loop() {
 
-  // set target position
-  //int target = 1200;
-  int target = 250*sin(prevT/1e6);
+  if(millis() >= targetSwitch + targetInterval)
+  {
+    /*if(target == 20)
+      target = 15;
+    else
+      target = 20;*/
+    target += 7;
+
+    targetSwitch = millis();
+  }
+
+  //target = 1000*sin(prevT/1e6);
 
   // PID constants
-  float kp = 1;
-  float kd = 0.025;
-  float ki = 0.0;
+  double kp = 15;
+  double kd = 0.0;
+  double ki = 0.0;
 
   // time difference
-  long currT = micros();
-  float deltaT = ((float) (currT - prevT))/( 1.0e6 );
+  unsigned long currT = micros();
+  double deltaT = (double)((currT - prevT)*(0.000001));
   prevT = currT;
 
   // Read the position
@@ -50,50 +66,60 @@ void loop() {
   int e = pos - target;
 
   // derivative
-  float dedt = (e-eprev)/(deltaT);
+  double dedt = (e-eprev)/(deltaT);
 
   // integral
   eintegral = eintegral + e*deltaT;
 
   // control signal
-  float u = kp*e + kd*dedt + ki*eintegral;
+  double u = kp*e + kd*dedt + ki*eintegral;
 
   // motor power
-  float pwr = fabs(u);
-  if( pwr > 255 ){
+  double pwr = fabs(double(u));
+  if(pwr > 255){
     pwr = 255;
   }
 
   // motor direction
   int dir = 1;
-  if(u<0){
+  if(u < 0){
     dir = -1;
   }
 
   // signal the motor
   setMotor(dir,pwr,PWM_1,DIR_1);
 
-
   // store previous error
   eprev = e;
 
-  Serial.print(target);
-  Serial.print(" ");
-  Serial.print(pos);
-  Serial.println();
+  if(millis() >= printTime + printerval)
+  {
+    Serial.print(target);
+    Serial.print(" ");
+    Serial.print(pos);
+    /*Serial.print(" ");
+    Serial.print(deltaT);
+    Serial.print(" ");
+    Serial.print(dedt);*/
+    Serial.println();
+
+    printTime = millis();
+  }
+  delayMicroseconds(10);
 }
 
 void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
   analogWrite(pwmPin,pwmVal);
   
-  if(dir == 1)
+  if(dir > 0)
     digitalWrite(dirPin,HIGH);
   else
     digitalWrite(dirPin,LOW);
 }
 
 void readEncoder(){
-  if(digitalRead(ENCB) > 0){
+  int chB = digitalRead(ENCB);
+  if(chB > 0){
     posi++;
   }
   else{
