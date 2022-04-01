@@ -5,8 +5,17 @@ int sensorVals[32] = {00000, 00001, 00010, 00011, 00100, 00101, 00110, 00111, 01
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
+  setSyncProvider(getTeensy3Time);  // I believe this syncs the Teensy's 2 RTCs
   
+  Serial.begin(115200);
+  while (!Serial);  // Wait for Arduino Serial Monitor to open
+  
+  delay(100);
+  if (timeStatus()!= timeSet)
+    Serial.println("Unable to sync with the RTC");
+    
+  else
+    Serial.println("RTC has set the system time");
 }
 
 void loop() {
@@ -19,9 +28,20 @@ void loop() {
   if(sensor > -1){
     int sensorNumber = sensorVals[sensor];
   }
-  Serial.println(timeVal);
+  //Serial.println(timeVal);
+  Serial.print(hours);
+  Serial.print("\t");
+  Serial.print(minutes);
+  Serial.print("\t");
+  Serial.print(seconds);
+  Serial.println();
+  delay(1000);
 }
 
+time_t getTeensy3Time()
+{
+  return Teensy3Clock.get();
+}
 
 int findTime(int timeVal){
   for(int i = 0; i < 32; i++){
