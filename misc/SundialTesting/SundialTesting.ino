@@ -7,7 +7,9 @@
 #define SENSE2 A8
 
 //byte sensorSelect = 0b00000000;  // this will serve to select the correct light sensor
-int sensorValues[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the values of all 32 sensors
+int sensorValues[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the value of all 32 sensors
+int sensorHour[] = {7,7,8,8,9,9,10,10,10,10,11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,16,16,17};  // stores the hour associated with each sensor
+int sensorMinute[] = {0,30,0,30,0,30,0,15,30,45,0,15,30,45,0,15,30,45,0,15,30,45,0,15,30,45,0,15,30,0,30,0};  // stores the minutes associated with each sensor
 int sunCalibration[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the maximum value for each sensor in the sun (preloaded with lowest possible ADC value)
 int shadeCalibration[] = {1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,  // stores the minimum value for each sensor in the shade (peloaded with highest possible ADC value)
                         1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,
@@ -28,6 +30,8 @@ void setup() {
   updateSelection(0);  // writes 0000 to sensor select pins
 
   delay(250);
+
+  while(!Serial){} // wait until the serial port is ready
 
   Serial.println("Place sundial in sunlight and press any key to calibrate");  // prompt user to calibrate for sunlight
   while(Serial.available() == 0)  // wait until something is typed
@@ -61,8 +65,15 @@ void setup() {
 void loop()
 {
   readSensors();
+  printArray(sensorValues, 0, 31);  // test code for reading all sensors
 
-  printArray(sensorValues, 0, 31);  // print the array
+  /*Serial.print("9:30 sensor: ");  // test code for reading individual sensors
+  Serial.print(readSensor(5));
+
+  Serial.print("\t1:45 sensor: ");
+  Serial.println(readSensor(21));*/
+
+  delay(100);
 }
 
 void readSensors()  // reads all the sensors into the sensorValues array
@@ -74,6 +85,17 @@ void readSensors()  // reads all the sensors into the sensorValues array
     sensorValues[readLoop] = analogRead(SENSE1);  // read the values into an array
     sensorValues[readLoop + 16] = analogRead(SENSE2);
   }
+}
+
+int readSensor(byte senseIndex)  // returns the value of a specific sensor
+{
+  updateSelection(senseIndex);
+  delayMicroseconds(200);  // this delay allows the analog signal to propage before being read (see POLO trello card for 'scope measurement)
+  
+  if(senseIndex & 0b00010000)  // if the index is in the 16-32 range
+    return analogRead(SENSE2);
+  else
+    return analogRead(SENSE1);
 }
 
 void printArray(int arrayIn[], int printStart, int printEnd)  // print an array Use the array indexes you want (0-31 will print a 32 value array)
