@@ -7,9 +7,9 @@
 #define SENSE2 A8
 
 //byte sensorSelect = 0b00000000;  // this will serve to select the correct light sensor
-int sensorValues = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the values of all 32 sensors
-int sunCalibration = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the maximum value for each sensor in the sun (preloaded with lowest possible ADC value)
-int shadeCalibration = {1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,  // stores the minimum value for each sensor in the shade (peloaded with highest possible ADC value)
+int sensorValues[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the values of all 32 sensors
+int sunCalibration[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the maximum value for each sensor in the sun (preloaded with lowest possible ADC value)
+int shadeCalibration[] = {1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,  // stores the minimum value for each sensor in the shade (peloaded with highest possible ADC value)
                         1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,1024,
                         1024,1024,1024,1024,1024,1024,1024,1024};
 
@@ -31,34 +31,38 @@ void setup() {
 
   Serial.println("Place sundial in sunlight and press any key to calibrate");  // prompt user to calibrate for sunlight
   while(Serial.available() == 0)  // wait until something is typed
+  
+  calibrateSun();  // run the sunlight calibration
+  Serial.println("Sunlight calibrated");  // indicate that sun calibration is done
+  printArray(sunCalibration, 0, 31);  // print the calibration array
+  
   while(Serial.available() > 0)  // get all the incoming characters out of the serial buffer
   {
     Serial.read();
-    delay(2);
+    delay(10);
   }
-  calibrateSun();  // run the sunlight calibration
-  Serial.println("Sunlight calibrated");  // indicate that sun calibration is done
-  printArray(sunCalibration, 0, 32);  // print the calibration array
 
   delay(250);
   
   Serial.println("Place sundial in shade and press any key to calibrate");
   while(Serial.available() == 0)
+  
+  calibrateShade();  // run the shade calibration
+  Serial.println("Shade calibrated");  // indicate that shade calibration is done
+  printArray(shadeCalibration, 0, 31);  // print the calibration array
+  
   while(Serial.available() > 0)  // get all the incoming characters out of the serial buffer
   {
     Serial.read();
-    delay(2);
+    delay(10);
   }
-  calibrateShade();  // run the shade calibration
-  Serial.println("Shade calibrated");  // indicate that shade calibration is done
-  printArray(shadeCalibration, 0, 32);  // print the calibration array
 }
 
 void loop()
 {
   readSensors();
 
-  printArray(sensorValues, 0, 32);
+  printArray(sensorValues, 0, 31);  // print the array
 }
 
 void readSensors()  // reads all the sensors into the sensorValues array
@@ -72,9 +76,9 @@ void readSensors()  // reads all the sensors into the sensorValues array
   }
 }
 
-void printArray(int arrayIn[], int printStart, int printEnd)  // print an array
+void printArray(int arrayIn[], int printStart, int printEnd)  // print an array Use the array indexes you want (0-31 will print a 32 value array)
 {
-  for(byte printLoop = printStart; printLoop < printEnd; printLoop++)
+  for(byte printLoop = printStart; printLoop <= printEnd; printLoop++)
   {
     Serial.print(arrayIn[printLoop]);
     Serial.print("\t");
