@@ -1,4 +1,4 @@
-// Encoder test code with control system
+// Encoder test code with control system - derivative and integral terms removed
 // Based on code from Curio Res: https://github.com/curiores/ArduinoTutorials
 // Watch this video for more information: https://www.youtube.com/watch?v=dTGITLnYAY0
 
@@ -8,9 +8,7 @@
 #define DIR_1 4
 
 volatile int posi = 0; // specify posi as volatile: https://www.arduino.cc/reference/en/language/variables/variable-scope-qualifiers/volatile/
-unsigned long prevT = 0;
 double eprev = 0;
-double eintegral = 0;
 
 int target = 0;
 int printerval = 5;  // millisecond interval to print values
@@ -27,7 +25,6 @@ void setup() {
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
   
-  Serial.println("target pos");
   delay(2000);
 }
 
@@ -48,13 +45,6 @@ void loop() {
 
   // PID constants
   double kp = 15;
-  double kd = 0.0;
-  double ki = 0.0;
-
-  // time difference
-  unsigned long currT = micros();
-  double deltaT = (double)((currT - prevT)*(0.000001));
-  prevT = currT;
 
   // Read the position
   int pos = 0; 
@@ -65,14 +55,8 @@ void loop() {
   // error
   int e = pos - target;
 
-  // derivative
-  double dedt = (e-eprev)/(deltaT);
-
-  // integral
-  eintegral = eintegral + e*deltaT;
-
   // control signal
-  double u = kp*e + kd*dedt + ki*eintegral;
+  double u = kp*e;
 
   // motor power
   double pwr = fabs(double(u));
@@ -89,18 +73,11 @@ void loop() {
   // signal the motor
   setMotor(dir,pwr,PWM_1,DIR_1);
 
-  // store previous error
-  eprev = e;
-
   if(millis() >= printTime + printerval)
   {
     Serial.print(target);
     Serial.print(" ");
     Serial.print(pos);
-    /*Serial.print(" ");
-    Serial.print(deltaT);
-    Serial.print(" ");
-    Serial.print(dedt);*/
     Serial.println();
 
     printTime = millis();
