@@ -26,7 +26,7 @@ Byte 4 - SLS speed
 
 Byte 5 - LEGS 1 speed
 
-Byte 6 - LEGS 2 speed
+Byte 6 - LEGS 2 speed - NOT USED, LEGS SPEEDS WILL ALWAYS BE THE SAME
 
 Byte 7 - Launch/Landing detection (launch = 1, landing = 2)
 

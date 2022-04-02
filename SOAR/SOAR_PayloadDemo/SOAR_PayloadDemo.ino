@@ -37,6 +37,11 @@
 #define PWM_B 8  // PWM pin, motor B (SLS)
 #define DIR_B 7  // Direction pin, motor B
 
+#define LEGS_DIR_1 1
+#define LEGS_PWM_1 2
+#define LEGS_DIR_2 3
+#define LEGS_PWM_2 4
+
 // RFM97 connections:
 #define CSPIN 10
 #define DIO0PIN 14
@@ -48,22 +53,26 @@ RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);  // sensor objects
 Adafruit_BMP280 bmp; // BMP connected I2C
 
-float BMPcal = 0;  // initial calibration value (ground level)
-float currentAlt = 0;
-float Xaccel = 0;  // x acceleration value is stored here
-float lastAccel = 0;  // stores previous acceleration value
-float accelThreshold = 55;  // acceleration spike threshold value
-float altThreshold = 25;  // altitude threshold considered "on the ground"
-unsigned int launchTime = 0;  // saves the start of the launch acceleration
+float initAlt = 0;  // stores altitude at ground level
+float currentAlt = 10000;
+float checkAlt1 = 10000;
+float checkAlt2 = 10000;
+int launchThresh = 500;  // rocket must pass this altitude for landing detection to proceed
+int altRange = 2; //Amount of meters (+ or -) the rocket can be above/below the starting value.
+float noiseLimit = 0.1;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
 bool isLaunched = false;  // flag for when launch has occurred
 bool isLanded = false;
+bool easeActive = false;
+bool levelingActive = false;
+bool isEjected = false;
+
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
 unsigned int transmitInterval = 2500;  // milliseconds between tranmissions
 
 // receive array
-byte RXarray[9];  // stores received array
+byte RXarray[8];  // stores received array
 
 // radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
@@ -75,7 +84,7 @@ bool txComplete = true;  // indicates the last transmission is done
 int lastRSSI = 0;  // saves RSSI to be transmitted
 
 // control variables
-int controls[] = {0, 0, 0, 0}; // stores arm flag, motor values, and latch state
+int controls[] = {0, 0, 0, 0}; // stores arm flag, soar, sls, legs
 
 void setup()
 {
@@ -115,9 +124,9 @@ void setup()
   else
     Serial.println("ADXL345 initialized");
   
-  accel.setRange(ADXL345_RANGE_16_G);
+  accel.setRange(ADXL345_RANGE_2_G);
   
-  delay(500);
+  delay(250);
 
   // ----- BEGIN RADIO SETUP -----
   // initialize RFM97 with all settings listed
@@ -158,8 +167,8 @@ void setup()
   while(bmpStart + 30000 > millis())  // wait until the BMP has been on for 30s
     delay(10);
   
-  BMPcal = bmp.readAltitude(LOCALPRESSURE);
-  Serial.println(BMPcal);
+  initAlt = bmp.readAltitude(LOCALPRESSURE);
+  Serial.println(initAlt);
   Serial.println("Startup complete");
   delay(1000);
   
@@ -170,32 +179,35 @@ void setup()
 
 void loop()
 {
-  lastAccel = Xaccel;
-  sensors_event_t event;  // get ADXL345 data
-  accel.getEvent(&event);
-  Xaccel = abs(event.acceleration.x);  // store acceleration
-  //Serial.println(Xaccel);
-
-  if(Xaccel > accelThreshold)
+  currentAlt = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // make the altitude reading relative to ground level
+  
+  if(controls[0])  // if the system is armed (autonomous control)
   {
-    if(!isLaunched)
+    if(!isLaunched && currentAlt > launchThresh)
     {
-      if((lastAccel > accelThreshold))
+      isLaunched = 1;
+      Serial.println("Launched");
+    }
+      
+    if(isLaunched && !isLanded)
+    {
+      if(currentAlt <= altRange && currentAlt >= -altRange)
       {
-        if(launchTime + 2500 < millis())
-          isLaunched = true;
+        checkAlt1 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
+        delay(250);
+        checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
+        if(checkAlt1 - noiseLimit < checkAlt2 < checkAlt1 + noiseLimit)
+        {
+          isLanded = 1;
+          Serial.println("Landed");
+        }
       }
-      else
-        launchTime = millis();
     }
-    else if(!isLanded)
+
+    if(isLanded && !isEjected)
     {
-      currentAlt = bmp.readAltitude(LOCALPRESSURE) - BMPcal;
-      if(abs(currentAlt) < 20)
-        isLanded = true;
+      
     }
-    else
-      digitalWrite(LED_2, HIGH);
   }
 
   if(operationDone)  // if the last operation is finished
@@ -216,7 +228,7 @@ void loop()
     {
       handleReceive();  // this stores received data to RXarray and saves RSSI
       setMotors();  // sets the motors based on controls array
-      delay(10);
+      delay(1);
       transmitData();  // send a message back to GS
     }
     enableInterrupt = true;  // reenable the interrupt
@@ -233,7 +245,7 @@ void setFlag(void)  // this function is called after complete packet transmissio
 
 void handleReceive()  // performs everything necessary when data comes in
 {
-  receiveState = radio.readData(RXarray, 9);  // read received data to array
+  receiveState = radio.readData(RXarray, 8);  // read received data to array
 
   if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
@@ -261,61 +273,82 @@ void handleReceive()  // performs everything necessary when data comes in
 //    Serial.print(F("\t[RFM97] RSSI: "));  // print RSSI if desired
 //    Serial.print(radio.getRSSI());
 //    Serial.println(F(" dBm"));
-   
-    controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
 
-    controls[1] = RXarray[3];  // SOAR motor speed from RXarray
-    if(~RXarray[1] & 0b00000100)  // if SOAR direction bit is not set
-      controls[1] *= -1;
-
-    controls[2] = RXarray[4];  // SLS speed from RXarray
-    if(~RXarray[2] & 0b00001000)  // if SLS direction bit is not set
-      controls[2] *= -1;
+    if(RXarray[0] == 0)  // if the values are from MARCO, update the stuff
+    {
+      controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
       
+      controls[1] = RXarray[3];  // SOAR motor speed from RXarray
+      if(~RXarray[1] & 0b00000100)  // if SOAR direction bit is not set
+        controls[1] *= -1;
+      
+      controls[2] = RXarray[4];  // SLS speed from RXarray
+      if(~RXarray[1] & 0b00001000)  // if SLS direction bit is not set
+        controls[2] *= -1;
+      
+      controls[3] = RXarray[5];  // LEGS speed from RXarray
+      if(~RXarray[1] & 0b00010000)  // if LEGS direction bit is not set
+        controls[3] *= -1;
+    }
+
+    if(RXarray[0] = 1)  // if values are from EASE
+    {
+      
+    }
+
+    if(RXarray[0] = 3)  // if values are from POLO
+    {
+      
+    }
   }
-//  else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
-//    Serial.println(F("[RFM97] CRC error!"));
-//  else  // some other error
-//  {
-//    Serial.print(F("[RFM97] Failed, code "));
-//    Serial.println(receiveState);
-//  }
 }
 
 void transmitData()  // this function just retransmits the received array with a new system address
 {
   RXarray[0] = 2;  // set SOAR's system address
-  RXarray[7] = isLaunched;  // notify team if launch is detected
-  RXarray[8] = isLanded;
+  if(isLanded)
+    RXarray[7] = 2;
+  else if(isLaunched)
+    RXarray[7] = 1;
+  else
+    RXarray[7] = 0;
+    
+  if(easeActive)
+    RXarray[1] |= 0b00000010;  // set EASE bit to tell EASE to activate
   
   transmitFlag = true;
   txComplete = false;
   transmitTimer = millis();  // reset transmit timer
   
 //  Serial.println(F("[RFM97] Sending array ... "));
-  transmitState = radio.startTransmit(RXarray, 9);  // transmit array
+  transmitState = radio.startTransmit(RXarray, 8);  // transmit array
 }
 
 void setMotors()
 {
-  if(controls[0])
-  {
-    if(controls[1] > 0)  // speed is positive
-      digitalWrite(DIR_A, HIGH);
-    else
-      digitalWrite(DIR_A, LOW);
+  if(controls[1] > 0)  // speed is positive
+    digitalWrite(DIR_A, HIGH);
+  else
+    digitalWrite(DIR_A, LOW);
 
-    if(controls[2] > 0)  // speed is positive
-      digitalWrite(DIR_B, HIGH);
-    else
-      digitalWrite(DIR_B, LOW);
-      
-    analogWrite(PWM_A, abs(controls[1]));
-    analogWrite(PWM_B, abs(controls[2]));
+  if(controls[2] > 0)  // speed is positive
+    digitalWrite(DIR_B, HIGH);
+  else
+    digitalWrite(DIR_B, LOW);
+
+  if(controls[3] > 0)  // speed is positive
+  {
+    digitalWrite(LEGS_DIR_1, HIGH);
+    digitalWrite(LEGS_DIR_2, HIGH);
   }
   else
   {
-    analogWrite(PWM_A, 0);
-    analogWrite(PWM_B, 0);
+    digitalWrite(LEGS_DIR_1, LOW);
+    digitalWrite(LEGS_DIR_2, LOW);
   }
+    
+  analogWrite(PWM_A, abs(controls[1]));
+  analogWrite(PWM_B, abs(controls[2]));
+  analogWrite(LEGS_PWM_1, abs(controls[3]));
+  analogWrite(LEGS_PWM_2, abs(controls[3]));
 }

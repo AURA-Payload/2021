@@ -234,6 +234,11 @@ void handleCommand()
     if (offLoc > -1)
     {
       motorControl = false;
+      TXarray[2] = 0;  // set EASE speed to 0
+      TXarray[3] = 0;  // set SOAR speed to 0
+      TXarray[4] = 0;  // set SLS speed to 0
+      TXarray[5] = 0;  // set LEGS1 speed to 0
+      TXarray[6] = 0;  // set LEGS2 speed to 0
     }
     else if (onLoc > -1)
     {
@@ -275,7 +280,7 @@ void handleCommand()
 
   else if (easeLoc > -1)
   {
-    if (offLoc > -1)
+    if (!motorControl || offLoc > -1)
       TXarray[2] = 0;
     else if (upLoc > -1)
     {
@@ -297,7 +302,7 @@ void handleCommand()
 
   else if (soarLoc > -1)
   {
-    if (offLoc > -1)
+    if (!motorControl || offLoc > -1)
       TXarray[3] = 0;
     else if (upLoc > -1)
     {
@@ -319,7 +324,7 @@ void handleCommand()
 
   else if (slsLoc > -1)
   {
-    if (offLoc > -1)
+    if (!motorControl || offLoc > -1)
       TXarray[4] = 0;
     else if (upLoc > -1)
     {
@@ -340,7 +345,7 @@ void handleCommand()
 
   else if (legsLoc > -1)
   {
-    if (offLoc > -1)
+    if (!motorControl || offLoc > -1)
     {
       TXarray[5] = 0;
       TXarray[6] = 0;
