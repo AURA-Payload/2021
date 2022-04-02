@@ -65,6 +65,8 @@ bool isLanded = false;
 bool easeActive = false;
 bool levelingActive = false;
 bool isEjected = false;
+float levelValue = 1.18;  // target value for level
+float levelTolerance = 0.04;  // acceptable range for "level"
 
 
 // transmit variables
@@ -84,7 +86,10 @@ bool txComplete = true;  // indicates the last transmission is done
 int lastRSSI = 0;  // saves RSSI to be transmitted
 
 // control variables
-int controls[] = {0, 0, 0, 0}; // stores arm flag, soar, sls, legs
+int armVar = 0;
+int soarVar = 0;
+int slsVar = 0;
+int legsVar = 0;
 
 void setup()
 {
@@ -181,7 +186,7 @@ void loop()
 {
   currentAlt = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // make the altitude reading relative to ground level
   
-  if(controls[0])  // if the system is armed (autonomous control)
+  if(armVar)  // if the system is armed (autonomous control)
   {
     if(!isLaunched && currentAlt > launchThresh)
     {
@@ -206,7 +211,19 @@ void loop()
 
     if(isLanded && !isEjected)
     {
-      
+      easeActive = true;
+      levelingActive = true;
+    }
+    else
+      easeActive = false;
+
+    if(levelingActive)
+    {
+      sensors_event_t event; 
+      accel.getEvent(&event);
+      float levelError = levelValue - event.acceleration.y;
+      soarVar = (int)(50 * levelError);
+      soarVar = constrain(soarVar, -255, 255);
     }
   }
 
@@ -276,27 +293,27 @@ void handleReceive()  // performs everything necessary when data comes in
 
     if(RXarray[0] == 0)  // if the values are from MARCO, update the stuff
     {
-      controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
+      armVar = RXarray[1] & 0b00000001;  // armVar is set to the state of the arm bit
       
-      controls[1] = RXarray[3];  // SOAR motor speed from RXarray
+      soarVar = RXarray[3];  // SOAR motor speed from RXarray
       if(~RXarray[1] & 0b00000100)  // if SOAR direction bit is not set
-        controls[1] *= -1;
+        soarVar *= -1;
       
-      controls[2] = RXarray[4];  // SLS speed from RXarray
+      slsVar = RXarray[4];  // SLS speed from RXarray
       if(~RXarray[1] & 0b00001000)  // if SLS direction bit is not set
-        controls[2] *= -1;
+        slsVar *= -1;
       
-      controls[3] = RXarray[5];  // LEGS speed from RXarray
+      legsVar = RXarray[5];  // LEGS speed from RXarray
       if(~RXarray[1] & 0b00010000)  // if LEGS direction bit is not set
-        controls[3] *= -1;
+        legsVar *= -1;
     }
 
-    if(RXarray[0] = 1)  // if values are from EASE
+    if(RXarray[0] == 1)  // if values are from EASE
     {
       
     }
 
-    if(RXarray[0] = 3)  // if values are from POLO
+    if(RXarray[0] == 3)  // if values are from POLO
     {
       
     }
@@ -326,17 +343,17 @@ void transmitData()  // this function just retransmits the received array with a
 
 void setMotors()
 {
-  if(controls[1] > 0)  // speed is positive
+  if(soarVar > 0)  // speed is positive
     digitalWrite(DIR_A, HIGH);
   else
     digitalWrite(DIR_A, LOW);
 
-  if(controls[2] > 0)  // speed is positive
+  if(slsVar > 0)  // speed is positive
     digitalWrite(DIR_B, HIGH);
   else
     digitalWrite(DIR_B, LOW);
 
-  if(controls[3] > 0)  // speed is positive
+  if(legsVar > 0)  // speed is positive
   {
     digitalWrite(LEGS_DIR_1, HIGH);
     digitalWrite(LEGS_DIR_2, HIGH);
@@ -347,8 +364,8 @@ void setMotors()
     digitalWrite(LEGS_DIR_2, LOW);
   }
     
-  analogWrite(PWM_A, abs(controls[1]));
-  analogWrite(PWM_B, abs(controls[2]));
-  analogWrite(LEGS_PWM_1, abs(controls[3]));
-  analogWrite(LEGS_PWM_2, abs(controls[3]));
+  analogWrite(PWM_A, abs(soarVar));
+  analogWrite(PWM_B, abs(slsVar));
+  analogWrite(LEGS_PWM_1, abs(legsVar));
+  analogWrite(LEGS_PWM_2, abs(legsVar));
 }
