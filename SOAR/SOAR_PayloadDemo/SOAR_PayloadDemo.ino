@@ -62,12 +62,6 @@ int altRange = 2; //Amount of meters (+ or -) the rocket can be above/below the 
 float noiseLimit = 0.1;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
 bool isLaunched = false;  // flag for when launch has occurred
 bool isLanded = false;
-bool easeActive = false;
-bool levelingActive = false;
-bool isEjected = false;
-float levelValue = 1.18;  // target value for level
-float levelTolerance = 0.04;  // acceptable range for "level"
-
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -99,6 +93,10 @@ void setup()
   pinMode(DIR_A, OUTPUT);
   pinMode(PWM_B, OUTPUT);
   pinMode(DIR_B, OUTPUT);
+  pinMode(LEGS_PWM_1, OUTPUT);
+  pinMode(LEGS_DIR_1, OUTPUT);
+  pinMode(LEGS_PWM_2, OUTPUT);
+  pinMode(LEGS_DIR_2, OUTPUT);
 
   pinMode(LIMIT_1, INPUT);
   pinMode(LIMIT_2, INPUT);
@@ -185,30 +183,30 @@ void setup()
 void loop()
 {
   currentAlt = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // make the altitude reading relative to ground level
-  
-  if(armVar)  // if the system is armed (autonomous control)
+
+  if(!isLaunched && currentAlt > launchThresh)
   {
-    if(!isLaunched && currentAlt > launchThresh)
+    isLaunched = 1;
+    Serial.println("Launched");
+  }
+    
+  if(isLaunched && !isLanded)
+  {
+    if(currentAlt <= altRange && currentAlt >= -altRange)
     {
-      isLaunched = 1;
-      Serial.println("Launched");
-    }
-      
-    if(isLaunched && !isLanded)
-    {
-      if(currentAlt <= altRange && currentAlt >= -altRange)
+      checkAlt1 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
+      delay(250);
+      checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
+      if(checkAlt1 - noiseLimit < checkAlt2 < checkAlt1 + noiseLimit)
       {
-        checkAlt1 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
-        delay(250);
-        checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
-        if(checkAlt1 - noiseLimit < checkAlt2 < checkAlt1 + noiseLimit)
-        {
-          isLanded = 1;
-          Serial.println("Landed");
-        }
+        isLanded = 1;
+        Serial.println("Landed");
       }
     }
-
+  }
+  
+  /*if(armVar)  // if the system is armed (autonomous control)
+  {
     if(isLanded && !isEjected)
     {
       easeActive = true;
@@ -225,7 +223,7 @@ void loop()
       soarVar = (int)(50 * levelError);
       soarVar = constrain(soarVar, -255, 255);
     }
-  }
+  }*/
 
   if(operationDone)  // if the last operation is finished
   {
@@ -307,16 +305,6 @@ void handleReceive()  // performs everything necessary when data comes in
       if(~RXarray[1] & 0b00010000)  // if LEGS direction bit is not set
         legsVar *= -1;
     }
-
-    if(RXarray[0] == 1)  // if values are from EASE
-    {
-      
-    }
-
-    if(RXarray[0] == 3)  // if values are from POLO
-    {
-      
-    }
   }
 }
 
@@ -329,9 +317,6 @@ void transmitData()  // this function just retransmits the received array with a
     RXarray[7] = 1;
   else
     RXarray[7] = 0;
-    
-  if(easeActive)
-    RXarray[1] |= 0b00000010;  // set EASE bit to tell EASE to activate
   
   transmitFlag = true;
   txComplete = false;
