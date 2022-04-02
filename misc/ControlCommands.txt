@@ -28,6 +28,8 @@ Byte 5 - LEGS 1 speed
 
 Byte 6 - LEGS 2 speed
 
+Byte 7 - Launch/Landing detection (launch = 1, landing = 2)
+
 ----- COMMUNICATION TIMING DESCRIPTION -----
 MARCO sends packets every second + whenever a serial command is received
 MARCO will not send a command for 5ms after transmitting - this allows SOAR and EASE to transmit
@@ -35,3 +37,12 @@ SOAR sends a packet 2ms after receiving a packet from MARCO
 EASE sends a packet 2ms after receiving a packet from SOAR
 
 Once POLO sends the packet for range/direction find, the control scheme changes to something else
+
+----- PC COMMUNICATION DESCRIPTION -----
+"motorArm" + "on" or "off" -> this activates motor control
+"payloadArm" + "on" or "off" -> this activates autonomous operation
+"calibrate" + "sun" or "shade" -> this calibrates the sundial
+"ease" + "up" or "down" or "off"
+"soar" + "up" or "down" or "off"
+"sls" + "up" or "down" or "off"
+"legs" + "up" or "down" or "off"

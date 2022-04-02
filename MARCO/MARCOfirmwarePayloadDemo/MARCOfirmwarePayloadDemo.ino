@@ -3,11 +3,13 @@
     AURA Payload 2021-22
     
     Commands:
-    "arm" + "on" or "off" -> this activates motor control
+    "motorArm" + "on" or "off" -> this activates motor control
+    "payloadArm" + "on" or "off" -> this activates autonomous operation
+    "calibrate" + "sun" or "shade" -> this calibrates the sundial
     "ease" + "up" or "down" or "off"
     "soar" + "up" or "down" or "off"
     "sls" + "up" or "down" or "off"
-    "latch" + "up" or "down"
+    "legs" + "up" or "down" or "off"
 
     Program Flow:
       Continually output radio control packets
@@ -35,15 +37,17 @@
 SX1276 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);
 
 // Command stuff
-byte TXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0, 0};  // outgoing array
-byte RXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0, 0};  // incoming array
+byte TXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0};  // outgoing array
+byte RXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0};  // incoming array
 volatile bool stringComplete = false;  // flags when user input is finished coming in
 String inputString = "";  // holds serial data from PC
 bool newCommand = false;
+bool motorControl = false;
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 1500;  // time between tranmissions
+unsigned int transmitInterval = 1000;  // time between tranmissions
+unsigned int transmitBlankTime = 5;  // dead time after a transmission
 
 // Radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
@@ -114,7 +118,7 @@ void loop()
 
     else  // last action was receive
     {
-      receiveState = radio.readData(RXarray, 9);  // save received data to RXarray
+      receiveState = radio.readData(RXarray, 8);  // save received data to RXarray
 
       if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
       {
@@ -136,8 +140,6 @@ void loop()
         Serial.print(RXarray[6]);
         Serial.print(", ");
         Serial.print(RXarray[7]);
-        Serial.print(", ");
-        Serial.print(RXarray[8]);
   
         // print RSSI (Received Signal Strength Indicator)
         Serial.print(F("\t[SX1276] RSSI: "));
@@ -157,7 +159,7 @@ void loop()
     receiveState = radio.startReceive();  // start receiving again
   }
 
-  if(txComplete && (newCommand || (millis() >= transmitTimer + transmitInterval)))  // if the TX interval has passed and last TX is done
+  if(txComplete && ((newCommand && millis() >= transmitTimer + transmitBlankTime) || (millis() >= transmitTimer + transmitInterval)))  // if the TX interval has passed and last TX is done
   {
     newCommand = false;
     transmitData();
@@ -186,7 +188,7 @@ void setFlag(void)  // this function is called after complete packet transmissio
 void transmitData()
 {
   txComplete = false;
-  transmitState = radio.startTransmit(TXarray, 9);  // transmit array
+  transmitState = radio.startTransmit(TXarray, 8);  // transmit array
 
   Serial.print("Transmitted: ");
   Serial.print(TXarray[0]);
@@ -204,8 +206,6 @@ void transmitData()
   Serial.print(TXarray[6]);
   Serial.print(", ");
   Serial.print(TXarray[7]);
-  Serial.print(", ");
-  Serial.println(TXarray[8]);
 
   transmitFlag = true;
   transmitTimer = millis();  // reset transmit timer
@@ -214,18 +214,39 @@ void transmitData()
 void handleCommand()
 {
   enableInterrupt = false;
-  int armLoc = inputString.indexOf("arm");
+  int motorLoc = inputString.indexOf("motorArm");
+  int armLoc = inputString.indexOf("payloadArm");
+  int calLoc = inputString.indexOf("calibrate");
   int easeLoc = inputString.indexOf("ease");
   int soarLoc = inputString.indexOf("soar");
   int slsLoc = inputString.indexOf("sls");
-  int latchLoc = inputString.indexOf("latch");
+  int legsLoc = inputString.indexOf("legs");
   int onLoc = inputString.indexOf("on");
   int offLoc = inputString.indexOf("off");
   int upLoc = inputString.indexOf("up");
   int downLoc = inputString.indexOf("down");
+  int sunLoc = inputString.indexOf("sun");
+  int shadeLoc = inputString.indexOf("shade");
   bool validCommand = true;
 
-  if (armLoc > -1)
+  if (motorLoc > -1)
+  {
+    if (offLoc > -1)
+    {
+      motorControl = false;
+    }
+    else if (onLoc > -1)
+    {
+      motorControl = true;
+    }
+    else
+    {
+      validCommand = false;
+      Serial.println("Invalid Command");
+    }
+  }
+
+  else if (armLoc > -1)
   {
     if (offLoc > -1)
     {
@@ -233,6 +254,8 @@ void handleCommand()
       TXarray[2] = 0;  // set EASE speed to 0
       TXarray[3] = 0;  // set SOAR speed to 0
       TXarray[4] = 0;  // set SLS speed to 0
+      TXarray[5] = 0;  // set LEGS1 speed to 0
+      TXarray[6] = 0;  // set LEGS2 speed to 0
     }
     else if (onLoc > -1)
     {
@@ -240,6 +263,8 @@ void handleCommand()
       TXarray[2] = 0;  // set EASE speed to 0
       TXarray[3] = 0;  // set SOAR speed to 0
       TXarray[4] = 0;  // set SLS speed to 0
+      TXarray[5] = 0;  // set LEGS1 speed to 0
+      TXarray[6] = 0;  // set LEGS2 speed to 0
     }
     else
     {
@@ -312,15 +337,44 @@ void handleCommand()
       Serial.println("Invalid Command");
     }
   }
-  
-  else if (latchLoc > -1)
+
+  else if (legsLoc > -1)
   {
-    if (upLoc > -1)
+    if (offLoc > -1)
     {
-      TXarray[1] &= 0b11101111;  // clear latch bit
+      TXarray[5] = 0;
+      TXarray[6] = 0;
+    }
+    else if (upLoc > -1)
+    {
+      TXarray[5] = 150;
+      TXarray[6] = 150;
+      TXarray[1] |= 0b00010000;
     }
     else if (downLoc > -1)
-      TXarray[1] |= 0b00010000;  // set latch bit
+    {
+      TXarray[5] = 150;
+      TXarray[6] = 150;
+      TXarray[1] &= 0b11101111;
+    }
+    else
+    {
+      validCommand = false;
+      Serial.println("Invalid Command");
+    }
+  }
+  
+  else if (calLoc > -1)
+  {
+    if (sunLoc > -1)
+    {
+      TXarray[1] |= 0b00100000;  // set cal bit
+      TXarray[1] &= 0b10111111;  // clear sun/shade bit
+    }
+    else if (shadeLoc > -1)
+    {
+      TXarray[1] |= 0b01100000;  // set cal bit & sun/shade bit
+    }
     else
     {
       validCommand = false;
@@ -330,6 +384,7 @@ void handleCommand()
 
   else
   {
+    TXarray[1] &= 0b10011111;  // clear cal & sun/shade bit
     validCommand = false;
     Serial.println("Invalid Command");
   }
