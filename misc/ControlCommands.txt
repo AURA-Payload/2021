@@ -13,10 +13,10 @@ Byte 1 - Binary statuses
   Bit 1 - EASE dir
   Bit 2 - SOAR dir
   Bit 3 - SLS dir
-  Bit 4 - SLS latch (open/close)
-  Bit 5 - LEGS state (retracted/SOAR controlled)
-  Bit 6 - Direction find (in)active
-  Bit 7 - Rangefind (in)active
+  Bit 4 - LEGS dir
+  Bit 5 - Sundial calibrate (active = 1)
+  Bit 6 - Calibrate sun (0) or shade (1)
+  Bit 7 - Initiate range/direction find
   
 Byte 2 - EASE speed
 
@@ -24,10 +24,14 @@ Byte 3 - SOAR speed
 
 Byte 4 - SLS speed
 
-Byte 5 - Leg 1 angle
+Byte 5 - LEGS 1 speed
 
-Byte 6 - Leg 2 angle
+Byte 6 - LEGS 2 speed
 
-Byte 7 - Leg 3 angle
+----- COMMUNICATION TIMING DESCRIPTION -----
+MARCO sends packets every second + whenever a serial command is received
+MARCO will not send a command for 5ms after transmitting - this allows SOAR and EASE to transmit
+SOAR sends a packet 2ms after receiving a packet from MARCO
+EASE sends a packet 2ms after receiving a packet from SOAR
 
-Byte 8 - Leg 4 angle
+Once POLO sends the packet for range/direction find, the control scheme changes to something else
