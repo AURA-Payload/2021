@@ -37,7 +37,7 @@
 SX1276 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);
 
 // Command stuff
-byte TXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0};  // outgoing array
+byte TXarray[] = {0};  // outgoing array
 byte RXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0};  // incoming array
 volatile bool stringComplete = false;  // flags when user input is finished coming in
 String inputString = "";  // holds serial data from PC
@@ -46,7 +46,7 @@ bool motorControl = false;
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 1000;  // time between tranmissions
+unsigned int transmitInterval = 100;  // time between tranmissions
 unsigned int transmitBlankTime = 5;  // dead time after a transmission
 
 // Radio variables
@@ -93,8 +93,6 @@ void setup()
 
 void loop()
 {
-  if (stringComplete)
-    handleCommand();
   
   if(operationDone)  // if the last operation is finished
   {
@@ -166,17 +164,6 @@ void loop()
   }
 }
 
-void serialEvent()
-{
-  while (Serial.available()) {
-    char inChar = (char)Serial.read();  // get the new byte
-    inputString += inChar;  // add to inputString
-    if (inChar == '\n') {  // toggle flag when newline
-      stringComplete = true;
-    }
-  }
-}
-
 void setFlag(void)  // this function is called after complete packet transmission or reception
 {
   if(!enableInterrupt)  // check if the interrupt is enabled
@@ -209,195 +196,4 @@ void transmitData()
 
   transmitFlag = true;
   transmitTimer = millis();  // reset transmit timer
-}
-
-void handleCommand()
-{
-  enableInterrupt = false;
-  int motorLoc = inputString.indexOf("motorArm");
-  int armLoc = inputString.indexOf("payloadArm");
-  int calLoc = inputString.indexOf("calibrate");
-  int easeLoc = inputString.indexOf("ease");
-  int soarLoc = inputString.indexOf("soar");
-  int slsLoc = inputString.indexOf("sls");
-  int legsLoc = inputString.indexOf("legs");
-  int onLoc = inputString.indexOf("on");
-  int offLoc = inputString.indexOf("off");
-  int upLoc = inputString.indexOf("up");
-  int downLoc = inputString.indexOf("down");
-  int sunLoc = inputString.indexOf("sun");
-  int shadeLoc = inputString.indexOf("shade");
-  bool validCommand = true;
-
-  if (motorLoc > -1)
-  {
-    if (offLoc > -1)
-    {
-      motorControl = false;
-      TXarray[2] = 0;  // set EASE speed to 0
-      TXarray[3] = 0;  // set SOAR speed to 0
-      TXarray[4] = 0;  // set SLS speed to 0
-      TXarray[5] = 0;  // set LEGS1 speed to 0
-      TXarray[6] = 0;  // set LEGS2 speed to 0
-    }
-    else if (onLoc > -1)
-    {
-      motorControl = true;
-    }
-    else
-    {
-      validCommand = false;
-      Serial.println("Invalid Command");
-    }
-  }
-
-  else if (armLoc > -1)
-  {
-    if (offLoc > -1)
-    {
-      TXarray[1] &= 0b11111110;  // clear ARM bit
-      TXarray[2] = 0;  // set EASE speed to 0
-      TXarray[3] = 0;  // set SOAR speed to 0
-      TXarray[4] = 0;  // set SLS speed to 0
-      TXarray[5] = 0;  // set LEGS1 speed to 0
-      TXarray[6] = 0;  // set LEGS2 speed to 0
-    }
-    else if (onLoc > -1)
-    {
-      TXarray[1] |= 0b00000001;  // set ARM bit
-      TXarray[2] = 0;  // set EASE speed to 0
-      TXarray[3] = 0;  // set SOAR speed to 0
-      TXarray[4] = 0;  // set SLS speed to 0
-      TXarray[5] = 0;  // set LEGS1 speed to 0
-      TXarray[6] = 0;  // set LEGS2 speed to 0
-    }
-    else
-    {
-      validCommand = false;
-      Serial.println("Invalid Command");
-    }
-  }
-
-  else if (easeLoc > -1)
-  {
-    if (!motorControl || offLoc > -1)
-      TXarray[2] = 0;
-    else if (upLoc > -1)
-    {
-      TXarray[2] = 255;
-      TXarray[1] |= 0b00000010;
-    }
-    else if (downLoc > -1)
-    {
-      
-      TXarray[2] = 255;
-      TXarray[1] &= 0b11111101;
-    }
-    else
-    {
-      validCommand = false;
-      Serial.println("Invalid Command");
-    }
-  }
-
-  else if (soarLoc > -1)
-  {
-    if (!motorControl || offLoc > -1)
-      TXarray[3] = 0;
-    else if (upLoc > -1)
-    {
-      TXarray[3] = 255;
-      TXarray[1] |= 0b00000100;
-    }
-    else if (downLoc > -1)
-    {
-      
-      TXarray[3] = 255;
-      TXarray[1] &= 0b11111011;
-    }
-    else
-    {
-      validCommand = false;
-      Serial.println("Invalid Command");
-    }
-  }
-
-  else if (slsLoc > -1)
-  {
-    if (!motorControl || offLoc > -1)
-      TXarray[4] = 0;
-    else if (upLoc > -1)
-    {
-      TXarray[4] = 255;
-      TXarray[1] |= 0b00001000;
-    }
-    else if (downLoc > -1)
-    {
-      TXarray[4] = 255;
-      TXarray[1] &= 0b11110111;
-    }
-    else
-    {
-      validCommand = false;
-      Serial.println("Invalid Command");
-    }
-  }
-
-  else if (legsLoc > -1)
-  {
-    if (!motorControl || offLoc > -1)
-    {
-      TXarray[5] = 0;
-      TXarray[6] = 0;
-    }
-    else if (upLoc > -1)
-    {
-      TXarray[5] = 200;
-      TXarray[6] = 200;
-      TXarray[1] |= 0b00010000;
-    }
-    else if (downLoc > -1)
-    {
-      TXarray[5] = 200;
-      TXarray[6] = 200;
-      TXarray[1] &= 0b11101111;
-    }
-    else
-    {
-      validCommand = false;
-      Serial.println("Invalid Command");
-    }
-  }
-  
-  else if (calLoc > -1)
-  {
-    if (sunLoc > -1)
-    {
-      TXarray[1] |= 0b00100000;  // set cal bit
-      TXarray[1] &= 0b10111111;  // clear sun/shade bit
-    }
-    else if (shadeLoc > -1)
-    {
-      TXarray[1] |= 0b01100000;  // set cal bit & sun/shade bit
-    }
-    else
-    {
-      validCommand = false;
-      Serial.println("Invalid Command");
-    }
-  }
-
-  else
-  {
-    TXarray[1] &= 0b10011111;  // clear cal & sun/shade bit
-    validCommand = false;
-    Serial.println("Invalid Command");
-  }
-
-  if(validCommand)  // If the command is valid
-    newCommand = true;
-
-  inputString = "";  // clear string
-  stringComplete = false;  // reset flag
-  enableInterrupt = true;
 }

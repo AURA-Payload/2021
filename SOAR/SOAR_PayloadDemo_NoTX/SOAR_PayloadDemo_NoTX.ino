@@ -243,7 +243,7 @@ void loop()
       handleReceive();  // this stores received data to RXarray and saves RSSI
       setMotors();  // sets the motors based on controls array
       delay(1);
-      transmitData();  // send a message back to GS
+      //transmitData();  // send a message back to GS
     }
     enableInterrupt = true;  // reenable the interrupt
   }

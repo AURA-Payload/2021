@@ -37,7 +37,7 @@ unsigned int transmitTimer = 0;  // stores the time of the last transmission
 unsigned int transmitInterval = 2500;  // milliseconds between tranmissions
 
 // receive array
-byte RXarray[9];  // stores received array
+byte RXarray[8];  // stores received array
 
 // radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
@@ -107,7 +107,6 @@ void setup()
 
 void loop()
 {
-
   if(operationDone)  // if the last operation is finished
   {
     digitalWrite(LED_1, LOW);  // No LEDs in between modes
@@ -145,7 +144,7 @@ void setFlag(void)  // this function is called after complete packet transmissio
 
 void handleReceive()  // performs everything necessary when data comes in
 {
-  receiveState = radio.readData(RXarray, 9);  // read received data to array
+  receiveState = radio.readData(RXarray, 8);  // read received data to array
 
   if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
@@ -167,20 +166,20 @@ void handleReceive()  // performs everything necessary when data comes in
     Serial.print(RXarray[6]);
     Serial.print("\t");
     Serial.print(RXarray[7]);
-    Serial.print("\t");
-    Serial.println(RXarray[8]);
     
     Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
     Serial.print(radio.getRSSI());
     Serial.println(F(" dBm"));
    
-    controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
+    //controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
 
     controls[1] = RXarray[2];  // motor speed from RXarray
     if(~RXarray[1] & 0b00000010)  // if direction bit is not set
       controls[1] *= -1;
       
   }
+
+  setMotor();
 //  else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
 //    Serial.println(F("[RFM95] CRC error!"));
 //  else  // some other error
@@ -199,31 +198,23 @@ void transmitData()  // this function just retransmits the received array with a
   transmitTimer = millis();  // reset transmit timer
   
 //  Serial.println(F("[RFM95] Sending array ... "));
-  transmitState = radio.startTransmit(RXarray, 9);  // transmit array
+  transmitState = radio.startTransmit(RXarray, 8);  // transmit array
   digitalWrite(LED_2, HIGH);  // LED 2 on while transmit mode is active
 }
 
 void setMotor()
 {
-  if(controls[0])
+  if(controls[1] < 0)  // speed is negative
   {
-    if(controls[1] < 0)  // speed is negative
-    {
-      digitalWrite(DIR_A, HIGH);
-      digitalWrite(DIR_B, HIGH);
-    }
-    else
-    {
-      digitalWrite(DIR_A, LOW);
-      digitalWrite(DIR_B, LOW);
-    }
-      
-    analogWrite(PWM_A, abs(controls[1]));
-    analogWrite(PWM_B, abs(controls[1]));
+    digitalWrite(DIR_A, HIGH);
+    digitalWrite(DIR_B, HIGH);
   }
   else
   {
-    analogWrite(PWM_A, 0);
-    analogWrite(PWM_B, 0);
+    digitalWrite(DIR_A, LOW);
+    digitalWrite(DIR_B, LOW);
   }
+    
+  analogWrite(PWM_A, abs(controls[1]));
+  analogWrite(PWM_B, abs(controls[1]));
 }
