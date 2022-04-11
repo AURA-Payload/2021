@@ -273,8 +273,15 @@ void handleReceive()  // performs everything necessary when data comes in
       Serial.print(radio.getRSSI());
       Serial.println(F(" dBm"));
 
-    if(RXarray[0] = 2){ //Only listen if it comes from SOAR
-      
+    if(RXarray[0] = 2){ //Only do anything if it comes from SOAR
+      if(RXarray[1] & 0b00100000){
+        if(RXarray[1] & 0b01000000){
+          calibrateSun()
+        }
+        else{
+          calibrateShade()
+        }
+      }
     }
     else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH){  // packet received malformed
       Serial.println(F("[RFM97] CRC error!"));
@@ -287,6 +294,18 @@ void handleReceive()  // performs everything necessary when data comes in
       Serial.print(F("[RFM97] Failed, code "));
       Serial.println(receiveState);
     }
+}
+
+void calibrateSun() {
+  //calibrate sundial in sun
+  Serial.println(F("Calibrating sundial in sun"));
+  return
+}
+
+void calibrateShade() {
+  //calibrate sundial in shade
+  Serial.println(F("Calibrating sundial in shade"));
+  return
 }
 
 void transmitData()  // this function just retransmits the received array with a new system address
