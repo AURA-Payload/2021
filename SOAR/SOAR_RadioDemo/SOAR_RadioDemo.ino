@@ -3,17 +3,10 @@
   Devin Spivey and Fowler Askew
   AURA Payload 2021-22
   -------------------------------------------------------------*/
-#define LOCALPRESSURE 1028.1    // used to calculate altitude (in millibar)
 #define LED_2 22
 #define LED_1 23
-#define LIMIT_1 20
-#define LIMIT_2 21
 
 #include <RadioLib.h>  // include radio library
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_ADXL345_U.h>
-#include <Adafruit_BMP280.h>
 
 // motor pins
 #define PWM_A 6  // PWM pin, motor A (SOAR)
@@ -33,17 +26,6 @@
 #define DIO1PIN 15
 
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
-
-Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);  // sensor objects
-Adafruit_BMP280 bmp; // BMP connected I2C
-
-float initAlt = 0;  // stores altitude at ground level
-float currentAlt = 10000;
-float checkAlt1 = 10000;
-float checkAlt2 = 10000;
-int launchThresh = 500;  // rocket must pass this altitude for landing detection to proceed
-int altRange = 2; //Amount of meters (+ or -) the rocket can be above/below the starting value.
-float noiseLimit = 0.1;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
 bool isLaunched = false;  // flag for when launch has occurred
 bool isLanded = false;
 
@@ -59,9 +41,9 @@ int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
 int receiveState = RADIOLIB_ERR_NONE;  // saves radio state when receiving
 bool enableInterrupt = true;  // disables interrupt when not needed
 volatile bool operationDone = false;  // indicates an operation is complete
-bool transmitFlag = false;  // indicates the last operation was transmission
+bool wasTX = false;  // indicates the last operation was transmission
 bool txComplete = true;  // indicates the last transmission is done
-int lastRSSI = 0;  // saves RSSI to be transmitted
+float lastRSSI = 0;  // saves RSSI to be transmitted
 
 // control variables
 int armVar = 0;
@@ -82,37 +64,17 @@ void setup()
   pinMode(LEGS_PWM_2, OUTPUT);
   pinMode(LEGS_DIR_2, OUTPUT);
 
-  pinMode(LIMIT_1, INPUT);
-  pinMode(LIMIT_2, INPUT);
-
   digitalWrite(LED_2, HIGH);
+  digitalWrite(PWM_A, LOW);  // Set all these things low so that nothing happens
+  digitalWrite(DIR_A, LOW);
+  digitalWrite(PWM_B, LOW);
+  digitalWrite(DIR_B, LOW);
+  digitalWrite(LEGS_PWM_1, LOW);
+  digitalWrite(LEGS_DIR_1, LOW);
+  digitalWrite(LEGS_PWM_2, LOW);
+  digitalWrite(LEGS_DIR_2, LOW);
 
   Serial.begin(115200);
-  Wire.begin();
-  delay(250);
-
-  // ----- BMP280 ALTIMETER SETUP -----
-  if (!bmp.begin())
-    Serial.println("BMP280 initialization failed");
-  else
-    Serial.println("BMP280 initialized");
-
-  unsigned int bmpStart = millis();
-
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
-                  Adafruit_BMP280::SAMPLING_X2,
-                  Adafruit_BMP280::SAMPLING_X16,
-                  Adafruit_BMP280::FILTER_OFF,
-                  Adafruit_BMP280::STANDBY_MS_500);
-
-  // ----- ADXL345 ACCELEROMETER SETUP -----
-  if(!accel.begin())
-    Serial.println("ADXL345 initialization failed");
-  else
-    Serial.println("ADXL345 initialized");
-  
-  accel.setRange(ADXL345_RANGE_2_G);
-  
   delay(250);
 
   // ----- BEGIN RADIO SETUP -----
@@ -150,12 +112,7 @@ void setup()
   // ----- END RADIO SETUP -----
 
   setMotors();  // sets the motors based on controls array
-
-  while(bmpStart + 30000 > millis())  // wait until the BMP has been on for 30s
-    delay(10);
   
-  initAlt = bmp.readAltitude(LOCALPRESSURE);
-  Serial.println(initAlt);
   Serial.println("Startup complete");
   delay(1000);
   
@@ -166,80 +123,8 @@ void setup()
 
 void loop()
 {
-  currentAlt = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // make the altitude reading relative to ground level
-
-  if(!isLaunched && currentAlt > launchThresh)
-  {
-    isLaunched = 1;
-    Serial.println("Launched");
-  }
-    
-  if(isLaunched && !isLanded)
-  {
-    if(currentAlt <= altRange && currentAlt >= -altRange)
-    {
-      checkAlt1 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
-      delay(250);
-      checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
-      if(checkAlt1 - noiseLimit < checkAlt2 < checkAlt1 + noiseLimit)
-      {
-        isLanded = 1;
-        Serial.println("Landed");
-      }
-    }
-  }
   
-  /*if(armVar)  // if the system is armed (autonomous control)
-  {
-    if(isLanded && !isEjected)
-    {
-      easeActive = true;
-      levelingActive = true;
-    }
-    else
-      easeActive = false;
-
-    if(levelingActive)
-    {
-      sensors_event_t event; 
-      accel.getEvent(&event);
-      float levelError = levelValue - event.acceleration.y;
-      soarVar = (int)(50 * levelError);
-      soarVar = constrain(soarVar, -255, 255);
-    }
-  }*/
-
-  if(operationDone)  // if the last operation is finished
-  {
-    digitalWrite(LED_1, LOW);  // No LED in between modes
-    enableInterrupt = false;  // disable the interrupt
-    operationDone = false;  // reset completion flag
-
-    if(transmitFlag)  // last action was transmit
-    {
-      transmitFlag = false;  // not transmitting this time
-      txComplete = true;
-      receiveState = radio.startReceive();  // start receiving again
-      digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
-    }
-
-    else  // last action was receive
-    {
-      handleReceive();  // this stores received data to RXarray and saves RSSI
-      setMotors();  // sets the motors based on controls array
-      delay(1);
-      transmitData();  // send a message back to GS
-    }
-    enableInterrupt = true;  // reenable the interrupt
-  }
-}
-
-void setFlag(void)  // this function is called after complete packet transmission or reception
-{
-  if(!enableInterrupt)  // check if the interrupt is enabled
-    return;
-
-  operationDone = true;  // something happened, set the flag
+  checkRadio();
 }
 
 void handleReceive()  // performs everything necessary when data comes in
@@ -292,6 +177,33 @@ void handleReceive()  // performs everything necessary when data comes in
   }
 }
 
+void checkRadio()  // this checks if a radio operation is complete and restarts radio operation
+{
+  if(operationDone)  // if the last radio operation is finished
+  {
+    digitalWrite(LED_1, LOW);  // No LED in between modes
+    enableInterrupt = false;  // disable the interrupt
+    operationDone = false;  // reset completion flag
+
+    if(wasTX)  // last action was transmit
+    {
+      wasTX = false;  // not transmitting this time
+      txComplete = true;
+      receiveState = radio.startReceive();  // start receiving again
+      digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
+    }
+
+    else  // last action was receive
+    {
+      handleReceive();  // this function does stuff based on received commands
+      setMotors();  // sets the motors based on controls array - not sure if this is the best place to do this
+      delay(2);  // delay a little to give some time for other systems
+      transmitData();  // Retransmit data - it would likely be better to break this out into the main loop
+    }
+    enableInterrupt = true;  // reenable the interrupt
+  }
+}
+
 void transmitData()  // this function just retransmits the received array with a new system address
 {
   RXarray[0] = 2;  // set SOAR's system address
@@ -302,7 +214,7 @@ void transmitData()  // this function just retransmits the received array with a
   else
     RXarray[7] = 0;
   
-  transmitFlag = true;
+  wasTX = true;
   txComplete = false;
   transmitTimer = millis();  // reset transmit timer
   
@@ -310,31 +222,22 @@ void transmitData()  // this function just retransmits the received array with a
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
 }
 
-void setMotors()
+void setFlag(void)  // this function is called after complete packet transmission or reception
 {
-  if(soarVar > 0)  // speed is positive
-    digitalWrite(DIR_A, HIGH);
-  else
-    digitalWrite(DIR_A, LOW);
+  if(!enableInterrupt)  // check if the interrupt is enabled
+    return;
 
-  if(slsVar > 0)  // speed is positive
-    digitalWrite(DIR_B, HIGH);
-  else
-    digitalWrite(DIR_B, LOW);
+  operationDone = true;  // something happened, set the flag
+}
 
-  if(legsVar > 0)  // speed is positive
-  {
-    digitalWrite(LEGS_DIR_1, HIGH);
-    digitalWrite(LEGS_DIR_2, HIGH);
-  }
-  else
-  {
-    digitalWrite(LEGS_DIR_1, LOW);
-    digitalWrite(LEGS_DIR_2, LOW);
-  }
-    
-  analogWrite(PWM_A, abs(soarVar));
-  analogWrite(PWM_B, abs(slsVar));
-  analogWrite(LEGS_PWM_1, abs(legsVar));
-  analogWrite(LEGS_PWM_2, abs(legsVar));
+void setMotors()  // This will print values for motor speeds
+{
+  Serial.print("SOAR motor: ");
+  Serial.print(soarVar);
+  Serial.print("\tSLS motor: ");
+  Serial.print(slsVar);
+  Serial.print("\tLEGS motor1: ");
+  Serial.print(legsVar);
+  Serial.print("\tLEGS motor2: ");
+  Serial.println(legsVar);
 }
