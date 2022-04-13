@@ -35,6 +35,7 @@ unsigned int transmitInterval = 2500;  // milliseconds between tranmissions
 
 // receive array
 byte RXarray[8];  // stores received array
+byte TXarray[8];  // stores array to be tranmitted
 
 // radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
@@ -150,15 +151,13 @@ void handleReceive()  // performs everything necessary when data comes in
     Serial.print("\t");
     Serial.print(RXarray[6]);
     Serial.print("\t");
-    Serial.print(RXarray[7]);
-    Serial.print("\t");
-    Serial.println(RXarray[8]);
+    Serial.println(RXarray[7]);
     
     Serial.print(F("\t[RFM97] RSSI: "));  // print RSSI if desired
     Serial.print(radio.getRSSI());
     Serial.println(F(" dBm"));
 
-    if(RXarray[0] == 0)  // if the values are from MARCO, update the stuff
+    if(RXarray[0] == 0)  // if the values are from MARCO, update appropriate things
     {
       armVar = RXarray[1] & 0b00000001;  // armVar is set to the state of the arm bit
       
