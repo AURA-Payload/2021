@@ -1,8 +1,9 @@
 This document describes the packets of the MARCO-EASE-SOAR-POLO system
 
 ----- PACKET DESCRIPTION -----
-One packet is transmitted by each system. When a system receives a packet, it will check the system address to determine what parts of the packet are relevant.
-Parts of this packet mean different things when sent from different systems.
+One packet is transmitted by each system.
+Some parts of this packet mean different things when sent from different systems.
+Each system will use the system address to determine how each part of the packet should be used.
 For example, MARCO sending a 1 for byte1, bit0 indicates that the system should arm.
 SOAR sending a 1 for byte1, bit0 indicates that the system is currently armed.
 
@@ -15,7 +16,7 @@ Byte 1 - Binary statuses
   Bit 3 - SLS dir
   Bit 4 - LEGS dir
   Bit 5 - Sundial calibrate (active = 1)
-  Bit 6 - Calibrate sun (0) or shade (1)
+  Bit 6 - Sundial calibrate sun/shade (sun = 1)
   Bit 7 - Initiate range/direction find
   
 Byte 2 - EASE speed
@@ -26,7 +27,7 @@ Byte 4 - SLS speed
 
 Byte 5 - LEGS 1 speed
 
-Byte 6 - LEGS 2 speed - NOT USED, LEGS SPEEDS WILL ALWAYS BE THE SAME
+Byte 6 - LEGS 2 speed
 
 Byte 7 - Launch/Landing detection (launch = 1, landing = 2)
 
