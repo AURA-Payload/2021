@@ -92,6 +92,9 @@ void loop()
   int sensor = findTime(timeVal);
   int found = 0;
   int sensorValue = -1;
+  if(sensor > -1){
+    Serial.println(sensorValue);
+  }
   while(sensor > -1 && found == 0) {
     sensorValue = readSensor(sensor);
     if(sensorValue == midCalibration[sensor]){
@@ -100,8 +103,10 @@ void loop()
     Serial.println("Rotate...");
   }
   delay(100);
-  Serial.println("Found!");
+  if(found == 1){
+    Serial.println("Found!");
   }
+}
 
 void readSensors()  // reads all the sensors into the sensorValues array
 {
