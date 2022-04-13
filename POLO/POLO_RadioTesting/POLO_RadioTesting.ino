@@ -276,10 +276,10 @@ void handleReceive()  // performs everything necessary when data comes in
     if(RXarray[0] = 2){ //Only do anything if it comes from SOAR
       if(RXarray[1] & 0b00100000){
         if(RXarray[1] & 0b01000000){
-          calibrateSun()
+          calibrateSun();
         }
         else{
-          calibrateShade()
+          calibrateShade();
         }
       }
     }
@@ -294,18 +294,19 @@ void handleReceive()  // performs everything necessary when data comes in
       Serial.print(F("[RFM97] Failed, code "));
       Serial.println(receiveState);
     }
+  }
 }
 
 void calibrateSun() {
   //calibrate sundial in sun
   Serial.println(F("Calibrating sundial in sun"));
-  return
+  return;
 }
 
 void calibrateShade() {
   //calibrate sundial in shade
   Serial.println(F("Calibrating sundial in shade"));
-  return
+  return;
 }
 
 void transmitData()  // this function just retransmits the received array with a new system address
