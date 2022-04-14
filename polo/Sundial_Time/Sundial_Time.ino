@@ -11,7 +11,7 @@
 
 //byte sensorSelect = 0b00000000;  // this will serve to select the correct light sensor
 int sensorValues[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // stores the value of all 32 sensors
-int validTimes[32] = {700, 730, 800, 830, 900, 930, 1000, 1015, 1030, 1045, 1100, 1115, 1130, 1145, 1200, 1215, 1230, 1245, 1300, 1315, 1330, 1345, 1400, 1415, 1430, 1445, 1500, 1515, 1530, 1600, 1630, 1835};
+int validTimes[32] = {700, 730, 800, 830, 900, 930, 1000, 1015, 1030, 1045, 1100, 1115, 1130, 1145, 1200, 1215, 1230, 1245, 1300, 1315, 1330, 1345, 1400, 1415, 1430, 1445, 1500, 1515, 1530, 1600, 1630, 1911};
 int sensorVals[32] = {00000, 00001, 00010, 00011, 00100, 00101, 00110, 00111, 01000, 01001, 01010, 01011, 01100, 01101, 01110, 01111, 10000, 10001, 10010, 10011, 10100, 10101, 10110, 10111, 11000, 11001, 11010, 11011, 11100, 11101, 11110, 11111};
 int sensorHour[] = {7,7,8,8,9,9,10,10,10,10,11,11,11,11,12,12,12,12,13,13,13,13,14,14,14,14,15,15,15,16,16,17};  // stores the hour associated with each sensor
 int sensorMinute[] = {0,30,0,30,0,30,0,15,30,45,0,15,30,45,0,15,30,45,0,15,30,45,0,15,30,45,0,15,30,0,30,0};  // stores the minutes associated with each sensor
@@ -93,14 +93,14 @@ void loop()
   int found = 0;
   int sensorValue = -1;
   if(sensor > -1){
-    Serial.println(sensorValue);
+    Serial.println(sensor);
   }
   while(sensor > -1 && found == 0) {
     sensorValue = readSensor(sensor);
-    if(sensorValue == midCalibration[sensor]){
+    Serial.println("Rotate...");
+    if((midCalibration[sensor] -  2) <= sensorValue && sensorValue <= (midCalibration[sensor] + 2)){
       found = 1;
     }
-    Serial.println("Rotate...");
   }
   delay(100);
   if(found == 1){
