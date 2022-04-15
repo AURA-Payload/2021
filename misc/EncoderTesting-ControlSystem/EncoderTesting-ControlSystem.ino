@@ -10,11 +10,14 @@
 volatile int posi = 0; // specify posi as volatile: https://www.arduino.cc/reference/en/language/variables/variable-scope-qualifiers/volatile/
 double eprev = 0;
 
-int target = 0;
-int printerval = 5;  // millisecond interval to print values
-int targetInterval = 1000;  // 2.5 seconds between switching targets
-unsigned long printTime = 0;
-unsigned long targetSwitch = 0;
+int totalDistance = 1; //number of motor shaft rotations to complete
+int gearRatio = 300; // gearRatio * rotationsOfScrew = rotationsOfMotor
+int pulsePerRotate = 7;  // encoder pulses (rising and falling) for one rotation
+int screwPitch = 1;  // TPI of leadscrew
+int target = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target to hit (should be 1 shaft rotation)
+
+int printerval = 10;  // millisecond interval to print values
+unsigned long printTime = 0;  // timer for printing stuff
 
 void setup() {
   Serial.begin(115200);
@@ -24,26 +27,12 @@ void setup() {
   
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
-  
+
+  Serial.println("Getting ready");
   delay(2000);
 }
 
 void loop() {
-
-  if(millis() >= targetSwitch + targetInterval)
-  {
-    /*if(target == 20)
-      target = 15;
-    else
-      target = 20;*/
-    target += 7;
-
-    targetSwitch = millis();
-  }
-
-  //target = 1000*sin(prevT/1e6);
-
-  // PID constants
   double kp = 15;
 
   // Read the position
@@ -59,7 +48,7 @@ void loop() {
   double u = kp*e;
 
   // motor power
-  double pwr = fabs(double(u));
+  double pwr = fabs(u);
   if(pwr > 255){
     pwr = 255;
   }
@@ -95,11 +84,9 @@ void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
 }
 
 void readEncoder(){
-  int chB = digitalRead(ENCB);
-  if(chB > 0){
+  if(digitalRead(ENCB) > 0)
     posi++;
-  }
-  else{
+    
+  else
     posi--;
-  }
 }
