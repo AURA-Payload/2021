@@ -9,7 +9,7 @@
 
 volatile int posi = 0; // specify posi as volatile
 
-int kp = 25;
+int kp = 20;
 int pos = 0;
 int e = 0;
 int u = 0;
@@ -17,8 +17,8 @@ int pwr = 0;
 int dir = 1;
 
 int totalDistance = 1; //number of motor shaft rotations to complete
-//int gearRatio = 302; // gearRatio * rotationsOfScrew = rotationsOfMotor
-int gearRatio = 10;
+int gearRatio = 302; // for testing output shaft accuracy
+//int gearRatio = 1;  // for testing small distance accuracy
 int pulsePerRotate = 7;  // encoder pulses (rising and falling) for one rotation
 int screwPitch = 1;  // TPI of leadscrew
 int totalRotations = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target to hit (should be 1 shaft rotation)
@@ -85,8 +85,8 @@ void loop() {
     Serial.print(target);
     Serial.print(" ");
     Serial.print(pos);
-    //Serial.print(" ");
-    //Serial.print(pwr);
+    Serial.print(" ");
+    Serial.print(pwr * dir);
     Serial.println();
 
     printTime = millis();
