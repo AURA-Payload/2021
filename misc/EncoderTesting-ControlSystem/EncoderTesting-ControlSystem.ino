@@ -7,8 +7,14 @@
 #define PWM_1 5
 #define DIR_1 4
 
-volatile int posi = 0; // specify posi as volatile: https://www.arduino.cc/reference/en/language/variables/variable-scope-qualifiers/volatile/
-double eprev = 0;
+volatile int posi = 0; // specify posi as volatile
+
+int kp = 25;
+int pos = 0;
+int e = 0;
+double u = 0;
+double pwr = 0;
+int dir = 1;
 
 int totalDistance = 1; //number of motor shaft rotations to complete
 int gearRatio = 300; // gearRatio * rotationsOfScrew = rotationsOfMotor
@@ -38,29 +44,26 @@ void loop() {
     Serial.read();
     posi = 0;
   }
-  
-  double kp = 25;
 
   // Read the position
-  int pos = 0; 
   noInterrupts(); // disable interrupts temporarily while reading
   pos = posi;
   interrupts(); // turn interrupts back on
   
   // error
-  int e = pos - target;
+  e = pos - target;
 
   // control signal
-  double u = kp*e;
+  u = kp*e;
 
   // motor power
-  double pwr = fabs(u);
+  pwr = fabs(u);
   if(pwr > 255){
     pwr = 255;
   }
 
   // motor direction
-  int dir = 1;
+  dir = 1;
   if(u < 0){
     dir = -1;
   }
