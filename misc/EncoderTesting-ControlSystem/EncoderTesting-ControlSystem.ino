@@ -17,11 +17,15 @@ int pwr = 0;
 int dir = 1;
 
 int totalDistance = 1; //number of motor shaft rotations to complete
-int gearRatio = 300; // gearRatio * rotationsOfScrew = rotationsOfMotor
+//int gearRatio = 302; // gearRatio * rotationsOfScrew = rotationsOfMotor
+int gearRatio = 10;
 int pulsePerRotate = 7;  // encoder pulses (rising and falling) for one rotation
 int screwPitch = 1;  // TPI of leadscrew
-int target = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target to hit (should be 1 shaft rotation)
+int totalRotations = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target to hit (should be 1 shaft rotation)
+int target = 0;
 
+int targetInterval = 3000;  // 2.5 seconds between switching targets
+unsigned long targetSwitch = 0;
 int printerval = 10;  // millisecond interval to print values
 unsigned long printTime = 0;  // timer for printing stuff
 
@@ -34,15 +38,20 @@ void setup() {
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
 
-  Serial.println("Getting ready");
   delay(2000);
 }
 
 void loop() {
-  if(Serial.available())  // reset position when serial received
+//  if(Serial.available())  // reset position when serial received
+//  {
+//    Serial.read();
+//    posi = 0;
+//  }
+
+  if(millis() >= targetSwitch + targetInterval)  // invert target periodically
   {
-    Serial.read();
-    posi = 0;
+    target = target + totalRotations;
+    targetSwitch = millis();
   }
 
   // Read the position
@@ -76,8 +85,8 @@ void loop() {
     Serial.print(target);
     Serial.print(" ");
     Serial.print(pos);
-    Serial.print(" ");
-    Serial.print(pwr);
+    //Serial.print(" ");
+    //Serial.print(pwr);
     Serial.println();
 
     printTime = millis();
