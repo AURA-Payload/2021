@@ -2,8 +2,8 @@
 // Based on code from Curio Res: https://github.com/curiores/ArduinoTutorials
 // Watch this video for more information: https://www.youtube.com/watch?v=dTGITLnYAY0
 
-#define ENCA 2 // YELLOW
-#define ENCB 3 // WHITE
+#define ENCA 3 // YELLOW
+#define ENCB 2 // WHITE
 #define PWM_1 5
 #define DIR_1 4
 
