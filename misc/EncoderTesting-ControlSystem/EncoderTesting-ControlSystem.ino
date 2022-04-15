@@ -12,8 +12,8 @@ volatile int posi = 0; // specify posi as volatile
 int kp = 25;
 int pos = 0;
 int e = 0;
-double u = 0;
-double pwr = 0;
+int u = 0;
+int pwr = 0;
 int dir = 1;
 
 int totalDistance = 1; //number of motor shaft rotations to complete
@@ -57,7 +57,7 @@ void loop() {
   u = kp*e;
 
   // motor power
-  pwr = fabs(u);
+  pwr = abs(u);
   if(pwr > 255){
     pwr = 255;
   }
