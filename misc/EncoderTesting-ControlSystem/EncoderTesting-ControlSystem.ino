@@ -33,7 +33,13 @@ void setup() {
 }
 
 void loop() {
-  double kp = 15;
+  if(Serial.available())  // reset position when serial received
+  {
+    Serial.read();
+    posi = 0;
+  }
+  
+  double kp = 25;
 
   // Read the position
   int pos = 0; 
@@ -67,6 +73,8 @@ void loop() {
     Serial.print(target);
     Serial.print(" ");
     Serial.print(pos);
+    Serial.print(" ");
+    Serial.print(pwr);
     Serial.println();
 
     printTime = millis();
