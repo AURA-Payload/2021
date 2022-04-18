@@ -17,7 +17,7 @@ Byte 1 - Binary statuses
   Bit 4 - LEGS dir
   Bit 5 - Sundial calibrate (active = 1)
   Bit 6 - Sundial calibrate sun/shade (sun = 1)
-  Bit 7 - Initiate range/direction find
+  Bit 7 - Range/direction find flag (SOAR = initiate, MARCO = acknowledge)
   
 Byte 2 - EASE speed
 
