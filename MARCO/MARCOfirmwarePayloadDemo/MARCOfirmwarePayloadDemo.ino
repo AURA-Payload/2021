@@ -219,6 +219,11 @@ void handleReceive()
     Serial.print(radio.getRSSI());
     Serial.println(F(" dBm"));
     
+    if(RXarray[0] == 2 && (RXarray[1] & 0b10000000)  // if the transmission is from SOAR and range/direction find bit is set
+    {
+      rangeState = 1;  // set rangeState to the first stage (direction finding)
+      TXarray[1] |= 0b10000000;  // set the direction finding bit as an acknowledgement
+    }
   }
   
 }
