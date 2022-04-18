@@ -123,33 +123,11 @@ void loop()
       receiveState = radio.readData(RXarray, packetLength);  // save received data to RXarray
 
       if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
-      {
-//        Serial.println(F("[SX1276] Received packet!"));
-//  
-        Serial.print("   Received: ");
-        Serial.print(RXarray[0]);
-        Serial.print(", ");
-        Serial.print(RXarray[1], BIN);
-        Serial.print(", ");
-        Serial.print(RXarray[2]);
-        Serial.print(", ");
-        Serial.print(RXarray[3]);
-        Serial.print(", ");
-        Serial.print(RXarray[4]);
-        Serial.print(", ");
-        Serial.print(RXarray[5]);
-        Serial.print(", ");
-        Serial.print(RXarray[6]);
-        Serial.print(", ");
-        Serial.print(RXarray[7]);
-  
-        // print RSSI (Received Signal Strength Indicator)
-        Serial.print(F("\t[SX1276] RSSI: "));
-        Serial.print(radio.getRSSI());
-        Serial.println(F(" dBm"));
-      }
+        handleReceive();
+        
       else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
         Serial.println(F("[SX1276] CRC error!"));
+        
       else  // some other error
       {
         Serial.print(F("[SX1276] RX failed, code "));
@@ -211,6 +189,38 @@ void transmitData()
 
   transmitFlag = true;
   transmitTimer = millis();  // reset transmit timer
+}
+
+void handleReceive()
+{
+  if(rangeState == 0)  // if ranging has not started, just print the received stuff & check for ranging begin
+  {
+    Serial.println(F("[SX1276] Received packet!"));
+    
+    Serial.print("   Received: ");
+    Serial.print(RXarray[0]);
+    Serial.print(", ");
+    Serial.print(RXarray[1], BIN);
+    Serial.print(", ");
+    Serial.print(RXarray[2]);
+    Serial.print(", ");
+    Serial.print(RXarray[3]);
+    Serial.print(", ");
+    Serial.print(RXarray[4]);
+    Serial.print(", ");
+    Serial.print(RXarray[5]);
+    Serial.print(", ");
+    Serial.print(RXarray[6]);
+    Serial.print(", ");
+    Serial.print(RXarray[7]);
+
+    // print RSSI (Received Signal Strength Indicator)
+    Serial.print(F("\t[SX1276] RSSI: "));
+    Serial.print(radio.getRSSI());
+    Serial.println(F(" dBm"));
+    
+  }
+  
 }
 
 void handleCommand()
