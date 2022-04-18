@@ -44,7 +44,7 @@ volatile bool stringComplete = false;  // flags when user input is finished comi
 String inputString = "";  // holds serial data from PC
 bool newCommand = false;
 bool motorControl = false;  // is motor control active?
-bool isRanging = false;  // have we started the ranging op?
+byte rangeState = 0;  // 1 = direction find started, 2 = ranging started, 3 = ranging complete
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -95,10 +95,10 @@ void setup()
 
 void loop()
 {
-  if (stringComplete)
+  if (stringComplete)  // if there's an input from PC
     handleCommand();
   
-  if(operationDone)  // if the last operation is finished
+  if(operationDone)  // if the last radio operation is finished
   {
     enableInterrupt = false;  // disable the interrupt
     operationDone = false;  // reset completion flag
