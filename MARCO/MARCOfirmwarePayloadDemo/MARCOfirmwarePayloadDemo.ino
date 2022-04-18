@@ -39,10 +39,12 @@ SX1276 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);
 // Command stuff
 byte TXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0};  // outgoing array
 byte RXarray[] = {0, 0b00000000, 0, 0, 0, 0, 0, 0};  // incoming array
+int packetLength = 8;  // define the length of the packet
 volatile bool stringComplete = false;  // flags when user input is finished coming in
 String inputString = "";  // holds serial data from PC
 bool newCommand = false;
-bool motorControl = false;
+bool motorControl = false;  // is motor control active?
+bool isRanging = false;  // have we started the ranging op?
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -112,13 +114,13 @@ void loop()
 //        Serial.println(F("transmission finished"));
       
 
-      transmitFlag = false;  // not transmitting this time
+      transmitFlag = false;  // transmitting is finished
       txComplete = true;
     }
 
     else  // last action was receive
     {
-      receiveState = radio.readData(RXarray, 8);  // save received data to RXarray
+      receiveState = radio.readData(RXarray, packetLength);  // save received data to RXarray
 
       if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
       {
@@ -188,7 +190,7 @@ void setFlag(void)  // this function is called after complete packet transmissio
 void transmitData()
 {
   txComplete = false;
-  transmitState = radio.startTransmit(TXarray, 8);  // transmit array
+  transmitState = radio.startTransmit(TXarray, packetLength);  // transmit array
 
   Serial.print("Transmitted: ");
   Serial.print(TXarray[0]);
