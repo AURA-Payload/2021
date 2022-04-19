@@ -9,18 +9,18 @@
 
 volatile int posi = 0; // specify posi as volatile
 
-int kp = 20;
+int kp = 5;
 int pos = 0;
 int e = 0;
 int u = 0;
 int pwr = 0;
 int dir = 1;
 
-int totalDistance = 1; //number of motor shaft rotations to complete
-int gearRatio = 302; // for testing output shaft accuracy
+int totalDistance = 17; //number of motor shaft rotations to complete
+int gearRatio = 349; // for testing output shaft accuracy: 302 for POLO, 349 for EASE
 //int gearRatio = 1;  // for testing small distance accuracy
-int pulsePerRotate = 7;  // encoder pulses (rising and falling) for one rotation
-int screwPitch = 1;  // TPI of leadscrew
+int pulsePerRotate = 12;  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
+int screwPitch = 8;  // TPI of leadscrew
 int totalRotations = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target to hit (should be 1 shaft rotation)
 int target = 0;
 
@@ -30,6 +30,7 @@ int printerval = 10;  // millisecond interval to print values
 unsigned long printTime = 0;  // timer for printing stuff
 
 void setup() {
+  target = totalRotations;
   Serial.begin(115200);
   pinMode(ENCA,INPUT);
   pinMode(ENCB,INPUT);
@@ -38,7 +39,7 @@ void setup() {
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
 
-  delay(2000);
+  delay(1000);
 }
 
 void loop() {
@@ -48,19 +49,19 @@ void loop() {
 //    posi = 0;
 //  }
 
-  if(millis() >= targetSwitch + targetInterval)  // invert target periodically
-  {
-    target = target + totalRotations;
-    targetSwitch = millis();
-  }
+//  if(millis() >= targetSwitch + targetInterval)  // invert target periodically
+//  {
+//    target = target + totalRotations;
+//    targetSwitch = millis();
+//  }
 
   // Read the position
-  noInterrupts(); // disable interrupts temporarily while reading
-  pos = posi;
-  interrupts(); // turn interrupts back on
+//  noInterrupts(); // disable interrupts temporarily while reading
+//  pos = posi;
+//  interrupts(); // turn interrupts back on
   
   // error
-  e = pos - target;
+  e = posi - target;
 
   // control signal
   u = kp*e;
@@ -80,18 +81,18 @@ void loop() {
   // signal the motor
   setMotor(dir,pwr,PWM_1,DIR_1);
 
-  if(millis() >= printTime + printerval)
-  {
-    Serial.print(target);
-    Serial.print(" ");
-    Serial.print(pos);
-    Serial.print(" ");
-    Serial.print(pwr * dir);
-    Serial.println();
-
-    printTime = millis();
-  }
-  delayMicroseconds(10);
+//  if(millis() >= printTime + printerval)
+//  {
+//    Serial.print(target);
+//    Serial.print(" ");
+//    Serial.print(pos);
+//    Serial.print(" ");
+//    Serial.print(pwr * dir);
+//    Serial.println();
+//
+//    printTime = millis();
+//  }
+//  delayMicroseconds(10);
 }
 
 void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
