@@ -41,6 +41,8 @@ void loop()
 //  Serial.print(" m/s^2\t");
 
   errorTerm = levelValue - event.acceleration.y;
+  if(event.acceleration.z < 0)
+    errorTerm *= 1000;
   motorValue = errorTerm * pGain;
   motorValue = constrain(motorValue, -255, 255);
 
