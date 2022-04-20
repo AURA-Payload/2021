@@ -59,7 +59,7 @@ unsigned int beaconDuration = 25;  // how long to transmit ultrasound for beacon
 unsigned int directionInterval = 250;  // how often to transmit beacon signals for dir finding (ms)
 unsigned int rangeInterval = 4000;  // how often to transmit beacon signals for ranging (ms)
 bool isEmitting = false;  // indicates when the system is transmitting ultrasound
-byte[] beaconPacket = {255};  // single byte packet for ranging operations
+byte beaconPacket[] = {255};  // single byte packet for ranging operations
 
 // Radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
@@ -176,6 +176,7 @@ void loop()
       noTone(TONE_PIN);  // stop transmitting ultrasound
       isEmitting = false;
     }
+  }
 
   else if(rangeState == 2)
   {
@@ -256,7 +257,7 @@ void handleReceive()
     Serial.print(radio.getRSSI());
     Serial.println(F(" dBm"));
     
-    if(RXarray[0] == 2 && (RXarray[1] & 0b10000000)  // if the transmission is from SOAR and range/direction find bit is set
+    if(RXarray[0] == 2 && (RXarray[1] & 0b10000000))  // if the transmission is from SOAR and range/direction find bit is set
     {
       rangeState = 1;  // set rangeState to the first stage (direction finding)
       TXarray[1] |= 0b10000000;  // set the direction finding bit as an acknowledgement
