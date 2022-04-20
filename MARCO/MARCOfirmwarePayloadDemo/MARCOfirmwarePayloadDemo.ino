@@ -181,6 +181,21 @@ void loop()
   else if(rangeState == 2)
   {
     // if the rangefinding mode is active
+    if(millis()-beaconTimer > rangeInterval)  // if the interval has passed
+    {
+      txComplete = false;
+      transmitFlag = true;
+      transmitState = radio.startTransmit(beaconPacket, 1);  // transmit one byte
+      tone(TONE_PIN, FREQ);  // start emitting the tone
+      isEmitting = true;  // we are emitting sound
+      beaconTimer = millis();  // reset transmit timer
+    }
+    
+    if(isEmitting && millis()-beaconTimer > beaconDuration)
+    {  // if there is ultrasound transmitting and we pass the output duration
+      noTone(TONE_PIN);  // stop transmitting ultrasound
+      isEmitting = false;
+    }
   }
 }
 
