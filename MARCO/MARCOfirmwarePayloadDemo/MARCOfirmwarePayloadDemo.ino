@@ -165,7 +165,7 @@ void setFlag(void)  // this function is called after complete packet transmissio
   operationDone = true;  // something happened, set the flag
 }
 
-void transmitData()
+void transmitData()  // this transmit sends the packet
 {
   txComplete = false;
   transmitState = radio.startTransmit(TXarray, packetLength);  // transmit array
@@ -226,12 +226,12 @@ void handleReceive()
     }
   }
 
-  if(rangeState = 1)
+  else if(rangeState = 1)
   {
     // This is during the direction finding part
   }
 
-  if(rangeState == 2)
+  else if(rangeState == 2)
   {
     // This is during/after the ranging
   }
