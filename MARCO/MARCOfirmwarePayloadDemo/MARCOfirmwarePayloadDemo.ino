@@ -51,7 +51,7 @@ byte rangeState = 0;  // 1 = direction find started, 2 = ranging started, 3 = ra
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 1000;  // time between tranmissions
+unsigned int transmitInterval = 100;  // time between tranmissions
 unsigned int transmitBlankTime = 5;  // dead time after a transmission
 
 unsigned int beaconTimer = 0;
@@ -149,7 +149,8 @@ void loop()
     receiveState = radio.startReceive();  // start receiving again
   }
 
-  if(rangeState == 0 && txComplete && ((newCommand && millis() >= transmitTimer + transmitBlankTime) || (millis() >= transmitTimer + transmitInterval)))
+  //if(rangeState == 0 && txComplete && ((newCommand && millis() >= transmitTimer + transmitBlankTime) || (millis() >= transmitTimer + transmitInterval)))
+  if(rangeState == 0 && txComplete && (millis() >= transmitTimer + transmitInterval))
   {
     // if we have not entered the ranging mode
     // if the radio is done with the last transmission
@@ -451,7 +452,11 @@ void handleCommand()  //ADD A COMMAND FOR MANUALLY ENDING/BEGINNING RANGING AND 
   
   else if (calLoc > -1)
   {
-    if (sunLoc > -1)
+    if (offLoc > -1)
+    {
+      TXarray[1] &= 0b10011111;  // clear calibrate bits
+    }
+    else if (sunLoc > -1)
     {
       TXarray[1] |= 0b00100000;  // set cal bit
       TXarray[1] &= 0b10111111;  // clear sun/shade bit
