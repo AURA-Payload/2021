@@ -51,6 +51,12 @@ unsigned int transmitTimer = 0;  // stores the time of the last transmission
 unsigned int transmitInterval = 1000;  // time between tranmissions
 unsigned int transmitBlankTime = 5;  // dead time after a transmission
 
+unsigned int beaconTimer = 0;
+unsigned int beaconDuration = 25;  // how long to transmit ultrasound for beacon (ms)
+unsigned int directionInterval = 250;  // how often to transmit beacon signals for dir finding (ms)
+unsigned int rangeInterval = 4000;  // how often to transmit beacon signals for ranging (ms)
+bool isEmitting = false;  // indicates when the system is transmitting ultrasound
+
 // Radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
 int receiveState = RADIOLIB_ERR_NONE;  // saves radio state when receiving
