@@ -76,6 +76,7 @@ bool easeDeployed = false;
 bool legsDeployed = false;
 bool slsDeployed = false; 
 bool fullyDeployed = false;
+bool rangeFinding = false;
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
@@ -226,7 +227,7 @@ void loop()
     }
   
     if(isLanded && !isLevel){
-      level()
+      level();
     }
   
     if(isLevel && !easeActivated){
@@ -236,16 +237,16 @@ void loop()
   
   
     if(easeDeployed && !legsDeployed){
-      legsVar = 10;
+      legsVar = 50;
       setMotors();
-      delay(10000);
+      delay(3000);
       legsVar = 0;
       setMotors();
       legsDeployed = true;
     }
   
     if(legsDeployed && !slsDeployed){
-      soarVar = 10;
+      soarVar = 255;
       while(!digitalRead(LIMIT_1)){ //Might need to be limit 2?
         setMotors();
       }
@@ -254,10 +255,11 @@ void loop()
       slsDeployed = true;
     }
 
-    if(slsDeployed){
+    if(slsDeployed && !rangeFinding){
       fullyDeployed = true;
-      RXarray[1] & 0b10000000 = 1; //Set bit to let MARCO know we are ready for range finding
+      RXarray[1] = RXarray[1] |= 0b10000000; //Set bit to let MARCO know we are ready for range finding
       transmitData();
+      rangeFinding = true;
     }
   }
   
@@ -349,25 +351,27 @@ void handleReceive()  // performs everything necessary when data comes in
     if(RXarray[0] == 0)  // if the values are from MARCO, update the stuff
     {
       armVar = RXarray[1] & 0b00000001;  // armVar is set to the state of the arm bit
-      
-      soarVar = RXarray[3];  // SOAR motor speed from RXarray
-      if(~RXarray[1] & 0b00000100)  // if SOAR direction bit is not set
-        soarVar *= -1;
-      
-      slsVar = RXarray[4];  // SLS speed from RXarray
-      if(~RXarray[1] & 0b00001000)  // if SLS direction bit is not set
-        slsVar *= -1;
-      
-      legsVar = RXarray[5];  // LEGS speed from RXarray
-      if(~RXarray[1] & 0b00010000)  // if LEGS direction bit is not set
-        legsVar *= -1;
+
+      if(!armVar){
+        soarVar = RXarray[3];  // SOAR motor speed from RXarray
+        if(~RXarray[1] & 0b00000100)  // if SOAR direction bit is not set
+          soarVar *= -1;
+        
+        slsVar = RXarray[4];  // SLS speed from RXarray
+        if(~RXarray[1] & 0b00001000)  // if SLS direction bit is not set
+          slsVar *= -1;
+        
+        legsVar = RXarray[5];  // LEGS speed from RXarray
+        if(~RXarray[1] & 0b00010000)  // if LEGS direction bit is not set
+          legsVar *= -1;
+      }
     }
 
     if(RXarray[0] == 1) //if value is from EASE, check to see if deployed
     {
-      if(RXarray[2] == -1) //Some flag value that EASE can set once deployed and transmit - does not have to be -1. 
+      if(RXarray[2] == 255) //Some flag value that EASE can set once deployed and transmit - does not have to be -1. 
       {
-        easeDeployed = True;
+        easeDeployed = true;
       }
     }
   }
@@ -462,12 +466,13 @@ void level(){
 //    else
 //      Serial.println("\tNot level >:(");
   
-    if(abs(errorTerm) < levelTolerance)
+    if(abs(errorTerm) < levelTolerance){
       Serial.println("\tLevel :)");
       isLevel = true;
-    else
+    }
+    else{
       Serial.println("\tNot level >:(");
-  
+    }
     setMotorA(motorValue);
   
     delay(25);
