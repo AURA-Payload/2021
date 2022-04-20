@@ -139,10 +139,18 @@ void loop()
     receiveState = radio.startReceive();  // start receiving again
   }
 
-  if(txComplete && ((newCommand && millis() >= transmitTimer + transmitBlankTime) || (millis() >= transmitTimer + transmitInterval)))  // if the TX interval has passed and last TX is done
+  if(rangeState == 0 && txComplete && ((newCommand && millis() >= transmitTimer + transmitBlankTime) || (millis() >= transmitTimer + transmitInterval)))
   {
+    // if we have not entered the ranging mode
+    // if the radio is done with the last transmission
+    // if the TX interval and blanking time has passed
     newCommand = false;
     transmitData();
+  }
+
+  else if(rangeState == 1)
+  {
+    // if the direction finding mode is active
   }
 }
 
@@ -223,10 +231,11 @@ void handleReceive()
     {
       rangeState = 1;  // set rangeState to the first stage (direction finding)
       TXarray[1] |= 0b10000000;  // set the direction finding bit as an acknowledgement
+      Serial.println("Direction finding mode activated");
     }
   }
 
-  else if(rangeState = 1)
+  else if(rangeState == 1)
   {
     // This is during the direction finding part
   }
@@ -237,7 +246,7 @@ void handleReceive()
   }
 }
 
-void handleCommand()
+void handleCommand()  //ADD A COMMAND FOR MANUALLY ENDING/BEGINNING RANGING AND DIRECTION FINDING
 {
   enableInterrupt = false;
   int motorLoc = inputString.indexOf("motorArm");
