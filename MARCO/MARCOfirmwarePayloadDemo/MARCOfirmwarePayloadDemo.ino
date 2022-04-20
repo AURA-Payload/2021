@@ -149,7 +149,7 @@ void loop()
   {
     // if we have not entered the ranging mode
     // if the radio is done with the last transmission
-    // if the TX interval and blanking time has passed
+    // if there is a new serial command and blanking time has passed or the TX interval has passed
     newCommand = false;
     transmitData();
   }
