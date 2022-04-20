@@ -158,6 +158,11 @@ void loop()
   {
     // if the direction finding mode is active
   }
+
+  else if(rangeState == 2)
+  {
+    // if the rangefinding mode is active
+  }
 }
 
 void serialEvent()
