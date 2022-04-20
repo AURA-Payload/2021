@@ -225,7 +225,16 @@ void handleReceive()
       TXarray[1] |= 0b10000000;  // set the direction finding bit as an acknowledgement
     }
   }
-  
+
+  if(rangeState = 1)
+  {
+    // This is during the direction finding part
+  }
+
+  if(rangeState == 2)
+  {
+    // This is during/after the ranging
+  }
 }
 
 void handleCommand()
