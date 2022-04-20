@@ -34,6 +34,9 @@
 #define RXENPIN 36
 #define TXENPIN 37
 
+#define TONE_PIN 5  // tone is generated on pin 5
+#define FREQ 25000  // 25kHz
+
 SX1276 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);
 
 // Command stuff
@@ -56,6 +59,7 @@ unsigned int beaconDuration = 25;  // how long to transmit ultrasound for beacon
 unsigned int directionInterval = 250;  // how often to transmit beacon signals for dir finding (ms)
 unsigned int rangeInterval = 4000;  // how often to transmit beacon signals for ranging (ms)
 bool isEmitting = false;  // indicates when the system is transmitting ultrasound
+byte[] beaconPacket = {255};  // single byte packet for ranging operations
 
 // Radio variables
 int transmitState = RADIOLIB_ERR_NONE;  // saves radio state when transmitting
@@ -157,7 +161,21 @@ void loop()
   else if(rangeState == 1)
   {
     // if the direction finding mode is active
-  }
+    if(millis()-beaconTimer > directionInterval)  // if the interval has passed
+    {
+      txComplete = false;
+      transmitFlag = true;
+      transmitState = radio.startTransmit(beaconPacket, 1);  // transmit one byte
+      tone(TONE_PIN, FREQ);  // start emitting the tone
+      isEmitting = true;  // we are emitting sound
+      beaconTimer = millis();  // reset transmit timer
+    }
+    
+    if(isEmitting && millis()-beaconTimer > beaconDuration)
+    {  // if there is ultrasound transmitting and we pass the output duration
+      noTone(TONE_PIN);  // stop transmitting ultrasound
+      isEmitting = false;
+    }
 
   else if(rangeState == 2)
   {
