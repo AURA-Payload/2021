@@ -48,7 +48,7 @@
 #define DIO1PIN 15
 
 #define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
-#define transmitInterval 250  // milliseconds between transmissions
+#define transmitInterval 500  // milliseconds between transmissions
 
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
@@ -82,7 +82,7 @@ bool fullyDeployed = false;
 bool rangeFinding = false;
 
 // transmit variables
-unsigned int transmitTimer = 0;  // stores the time of the last transmission
+unsigned long transmitTimer = 0;  // stores the time of the last transmission
 
 // receive array
 byte RXarray[8];  // stores received array
@@ -95,7 +95,7 @@ volatile bool operationDone = false;  // indicates an operation is complete
 bool transmitFlag = false;  // indicates the last operation was transmission
 bool txComplete = true;  // indicates the last transmission is done
 int lastRSSI = 0;  // saves RSSI to be transmitted
-unsigned int receiveTime = 0;  // stores the time when a packet was received
+unsigned long receiveTime = 0;  // stores the time when a packet was received
 bool hasTransmitted = true;
 
 
@@ -217,7 +217,7 @@ void loop()
       isLaunched = true;
       Serial.println("Launched");
       // Transmit Launched
-      transmitData();
+      //transmitData();
     }
       
     if(isLaunched && !isLanded)
@@ -232,7 +232,7 @@ void loop()
           isLanded = true;
           Serial.println("Landed");
           //Transmit Landed
-          transmitData();
+          //transmitData();
         }
       }
     }
@@ -272,7 +272,7 @@ void loop()
     if(slsDeployed && !rangeFinding){
       fullyDeployed = true;
       RXarray[1] = RXarray[1] |= 0b10000000; //Set bit to let MARCO know we are ready for range finding
-      transmitData();
+      //transmitData();
       rangeFinding = true;
       Serial.println("Activating Range Finding");
     }
