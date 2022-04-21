@@ -446,7 +446,7 @@ void setMotors()
 
 void level(){
   /* Get a new sensor event */ 
-  while(!isLevel){
+  if(!isLevel){
     sensors_event_t event; 
     accel.getEvent(&event);
     /* Display the results (acceleration is measured in m/s^2) */
