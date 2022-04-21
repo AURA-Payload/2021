@@ -47,6 +47,9 @@
 #define NRSTPIN 9 
 #define DIO1PIN 15
 
+#define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
+#define transmitInterval 1000  // milliseconds between transmissions
+
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);  // sensor objects
@@ -80,7 +83,6 @@ bool rangeFinding = false;
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 2500;  // milliseconds between tranmissions
 
 // receive array
 byte RXarray[8];  // stores received array
@@ -93,6 +95,9 @@ volatile bool operationDone = false;  // indicates an operation is complete
 bool transmitFlag = false;  // indicates the last operation was transmission
 bool txComplete = true;  // indicates the last transmission is done
 int lastRSSI = 0;  // saves RSSI to be transmitted
+unsigned int receiveTime = 0;  // stores the time when a packet was received
+bool hasTransmitted = true;
+
 
 // control variables
 int armVar = 0;
@@ -278,31 +283,11 @@ void loop()
       Serial.println("Activating Range Finding");
     }
   }
-  
-  
-  /*if(armVar)  // if the system is armed (autonomous control)
-  {
-    if(isLanded && !isEjected)
-    {
-      easeActive = true;
-      levelingActive = true;
-    }
-    else
-      easeActive = false;
 
-    if(levelingActive)
-    {
-      sensors_event_t event; 
-      accel.getEvent(&event);
-      float levelError = levelValue - event.acceleration.y;
-      soarVar = (int)(50 * levelError);
-      soarVar = constrain(soarVar, -255, 255);
-    }
-  }*/
-
-  if(operationDone)  // if the last operation is finished
+  if(operationDone)  // if the last radio operation is finished
   {
-    digitalWrite(LED_1, LOW);  // No LED in between modes
+    digitalWrite(LED_1, LOW);  // No LEDs in between modes
+    digitalWrite(LED_2, LOW);  // No LEDs in between modes
     enableInterrupt = false;  // disable the interrupt
     operationDone = false;  // reset completion flag
 
@@ -317,11 +302,14 @@ void loop()
     else  // last action was receive
     {
       handleReceive();  // this stores received data to RXarray and saves RSSI
-      setMotors();  // sets the motors based on controls array
-      delay(1);
-      transmitData();  // send a message back to GS
     }
+    //receiveState = radio.startReceive();  // start receiving again
     enableInterrupt = true;  // reenable the interrupt
+  }
+
+  if((!hasTransmitted && receiveTime + transmitDelay >= millis()) || transmitTimer + transmitInterval > millis())
+  {
+    transmitData();
   }
 }
 
@@ -413,6 +401,7 @@ void transmitData()  // this function just retransmits the received array with a
   
   transmitFlag = true;
   txComplete = false;
+  hasTransmitted = true;
   transmitTimer = millis();  // reset transmit timer
   
   Serial.println(F("[RFM97] Sending array ... "));
