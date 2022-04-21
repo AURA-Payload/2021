@@ -2,14 +2,14 @@
 // Based on code from Curio Res: https://github.com/curiores/ArduinoTutorials
 // Watch this video for more information: https://www.youtube.com/watch?v=dTGITLnYAY0
 
-#define ENCA 3 // YELLOW
-#define ENCB 2 // WHITE
+#include <RadioLib.h>  // include radio library
+
+#define ENCA 17 // interrupt on pin 17 (PC3)
+#define ENCB 16 // non-interrupted sensor
 #define PWM_1 9  // motorA is 9, 8; motorB is 6, 5
 #define DIR_1 8
 #define LED_1 18
 #define LED_2 19
-
-#include <RadioLib.h>  // include radio library
 
 // RFM95 connections:
 #define CSPIN 10
@@ -17,11 +17,21 @@
 #define NRSTPIN 2
 #define DIO1PIN 4
 
+#define totalDistance 17 //number of motor shaft rotations to complete
+#define gearRatio 326 // for testing output shaft accuracy: 302 for POLO, 349 for EASE
+//#define gearRatio 1  // for testing small distance accuracy
+#define pulsePerRotate 11  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
+#define screwPitch 8  // TPI of leadscrew
+
+#define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
+#define transmitInterval 1000  // milliseconds between transmissions
+
 RFM95 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
 // transmit variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 2500;  // milliseconds between tranmissions
+unsigned int receiveTime = 0;  // stores the time when a packet was received
+bool hasTransmitted = true;  // flag to keep track of when transmissions need to be made
 
 // receive array
 byte RXarray[8];  // stores received array
@@ -35,42 +45,28 @@ bool transmitFlag = false;  // indicates the last operation was transmission
 bool txComplete = true;  // indicates the last transmission is done
 
 // control variables
-int controls[] = {0, 0, 0}; // stores arm flag and motor values
+int motorSpeed = 0;
+bool isArmed = false;  // stores arm state (is auto deployment allowed)
+bool isDeploying = false;  // indcates if we're currently ejecting
+bool deployed = false;   // indicates when deployment is finished
 
-bool deployed = false;
-
-volatile int posi = 0; // specify posi as volatile
-
-int kp = 5;
-int pos = 0;
-int e = 0;
-int u = 0;
-int pwr = 0;
-int dir = 1;
-
-int totalDistance = 17; //number of motor shaft rotations to complete
-int gearRatio = 349; // for testing output shaft accuracy: 302 for POLO, 349 for EASE
-//int gearRatio = 1;  // for testing small distance accuracy
-int pulsePerRotate = 12;  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
-int screwPitch = 8;  // TPI of leadscrew
-int totalRotations = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target to hit (should be 1 shaft rotation)
-int target = 0;
-
-int targetInterval = 3000;  // 2.5 seconds between switching targets
-unsigned long targetSwitch = 0;
-int printerval = 10;  // millisecond interval to print values
-unsigned long printTime = 0;  // timer for printing stuff
+volatile unsigned int posi = 0; // specify posi as volatile
+unsigned int target = totalDistance * gearRatio * pulsePerRotate * screwPitch;
+// sets the target to hit (should be 1 shaft rotation)
 
 void setup() {
   Serial.begin(115200);
-  //pinMode(ENCA,INPUT);
-  //pinMode(ENCB,INPUT);
-  //attachInterrupt(digitalPinToInterrupt(ENCA),readEncoder,RISING);
+  pinMode(ENCA,INPUT);
+  pinMode(ENCB,INPUT);
   
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
+  setMotor(motorSpeed);  // turn the motor off
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
+
+  //PCICR |= 0b00000010;  // enable interrupts on PC register
+  //PCMSK1 |= 0b00001000;  // use interrupt mask on D17/A3/PC3
 
   // ----- BEGIN RADIO SETUP -----
   // initialize RFM95 with all settings listed
@@ -111,29 +107,19 @@ void setup() {
   delay(1000);
 }
 
-void loop() {
-  // error
-  e = posi - target;
-
-  // control signal
-  u = kp*e;
-
-  // motor power
-  pwr = abs(u);
-  if(pwr > 255){
-    pwr = 255;
+void loop(){
+  if(isDeploying){  // if we're currently deploying
+    if(posi < target)  // we haven't reached the target distance
+      motorSpeed = 255;  // run the motor
+    else  // if we have reached the target
+    {
+      motorSpeed = 0;  // stop the motor
+      isDeploying = false;  // stop deploying
+      deployed = true;
+    }
   }
 
-  // motor direction
-  dir = 1;
-  if(u < 0){
-    dir = -1;
-  }
-
-  // signal the motor
-  setMotor(dir,pwr,PWM_1,DIR_1);
-
-  if(operationDone)  // if the last operation is finished
+  if(operationDone)  // if the last radio operation is finished
   {
     digitalWrite(LED_1, LOW);  // No LEDs in between modes
     digitalWrite(LED_2, LOW);  // No LEDs in between modes
@@ -151,30 +137,17 @@ void loop() {
     else  // last action was receive
     {
       handleReceive();  // this stores received data to RXarray and saves RSSI
-      setMotor(dir,pwr,PWM_1,DIR_1); // sets the motors based on controls array
-      delay(10);
-      //transmitData();  // send a message back to GS
     }
-    receiveState = radio.startReceive();  // start receiving again
+    //receiveState = radio.startReceive();  // start receiving again
     enableInterrupt = true;  // reenable the interrupt
   }
-}
 
-void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
-  analogWrite(pwmPin,pwmVal);
+  if((!hasTransmitted && receiveTime + transmitDelay >= millis()) || transmitTimer + transmitInterval > millis())
+  {
+    transmitData();
+  }
   
-  if(dir > 0)
-    digitalWrite(dirPin,HIGH);
-  else
-    digitalWrite(dirPin,LOW);
-}
-
-void readEncoder(){
-  if(digitalRead(ENCB) > 0)
-    posi++;
-    
-  else
-    posi--;
+  setMotor(motorSpeed);  // update the motor
 }
 
 void setFlag(void)  // this function is called after complete packet transmission or reception
@@ -213,26 +186,34 @@ void handleReceive()  // performs everything necessary when data comes in
     Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
     Serial.print(radio.getRSSI());
     Serial.println(F(" dBm"));
-   
-    //controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
 
-    pwr = abs(RXarray[2]);  // motor speed from RXarray
-    if(~RXarray[1] & 0b00000010)  // if direction bit is not set
-      dir *= -1;
-    else{
-      dir = 1;
+
+    receiveTime = millis();  // store the time when data was received
+    hasTransmitted = false;  // indicate that we have not retransmitted stuff
+
+    if(RXarray[0] == 0){  // if command is from MARCO
+      isArmed = RXarray[1] & 0b00000001;  // set isArmed to arming bit (can disable during a deployment)
+      
+      if(!isDeploying){  // if it's not in the middle of an autonomous deployment
+        motorSpeed = RXarray[2];  // motor speed from RXarray
+        if(~RXarray[1] & 0b00000010)  // if direction bit is not set
+          motorSpeed *= -1;
+      }
+      else if(!isArmed)  // is it is currently deploying and has been disarmed
+      {
+        isDeploying = false;  // stop deploying
+        motorSpeed = 0;  // set motorSpeed to 0
+      }
     }
     
-    if(RXarray[0] == 2 && RXarray[2] == 255){
-      //target = totalRotations; 
-      deployed = true;
-      Serial.println("deployed");
-      transmitData();
+    if(RXarray[0] == 2){  // if command is from SOAR
+      if(RXarray[2] == 255)  // if the EASE byte is set
+      {
+        deployed = true;
+        Serial.println("deployed");
+      }
     }
-      
   }
-
-  setMotor(dir,pwr,PWM_1,DIR_1);
   
 //  else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
 //    Serial.println(F("[RFM95] CRC error!"));
@@ -250,12 +231,48 @@ void transmitData()  // this function just retransmits the received array with a
   
   transmitFlag = true;
   txComplete = false;
-  transmitTimer = millis();  // reset transmit timer
   if(deployed){
     RXarray[2] = 1;
   }
   
-  Serial.println(F("[RFM95] Sending array ... "));
+  Serial.print(F("[RFM95] Sending array ... "));
+  Serial.print(RXarray[0]);
+  Serial.print("\t");
+  Serial.print(RXarray[1], BIN);
+  Serial.print("\t");
+  Serial.print(RXarray[2]);
+  Serial.print("\t");
+  Serial.print(RXarray[3]);
+  Serial.print("\t");
+  Serial.print(RXarray[4]);
+  Serial.print("\t");
+  Serial.print(RXarray[5]);
+  Serial.print("\t");
+  Serial.print(RXarray[6]);
+  Serial.print("\t");
+  Serial.println(RXarray[7]);
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
+  transmitTimer = millis();
   digitalWrite(LED_2, HIGH);  // LED 2 on while transmit mode is active
+}
+
+void setMotor(int pwmVal)  // just sets the motor based on the PWM value
+{
+  analogWrite(PWM_1,abs(pwmVal));
+  
+  if(pwmVal > 0)
+    digitalWrite(DIR_1,HIGH);
+  else
+    digitalWrite(DIR_1,LOW);
+}
+
+ISR (PCINT1_vect){  // encoder read function
+  if(PINC & 0b00001000)  // if interrupt is high (rising signal)
+  {
+    if(PINC & 0b00000100)  // if PC2 (DIO16) is high
+      posi++;  // increment position
+    
+    else  // is PC2 is low
+      posi--;  // decrement position
+  }
 }
