@@ -4,19 +4,12 @@
 
 #define ENCA 3 // YELLOW
 #define ENCB 2 // WHITE
-#define PWM_1 5
-#define DIR_1 4
+#define PWM_1 9  // motorA is 9, 8; motorB is 6, 5
+#define DIR_1 8
 #define LED_1 18
 #define LED_2 19
 
 #include <RadioLib.h>  // include radio library
-
-// motor pins
-#define PWM_B 6 // PWM pin, motor A
-#define DIR_B 5  // Direction pin, motor A
-#define PWM_A 9  // PWM pin, motor B
-#define DIR_A 8  // Direction pin, motor B
-
 
 // RFM95 connections:
 #define CSPIN 10
@@ -70,19 +63,14 @@ unsigned long printTime = 0;  // timer for printing stuff
 
 void setup() {
   Serial.begin(115200);
-  pinMode(ENCA,INPUT);
-  pinMode(ENCB,INPUT);
-  attachInterrupt(digitalPinToInterrupt(ENCA),readEncoder,RISING);
+  //pinMode(ENCA,INPUT);
+  //pinMode(ENCB,INPUT);
+  //attachInterrupt(digitalPinToInterrupt(ENCA),readEncoder,RISING);
   
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
-
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
-  pinMode(PWM_A, OUTPUT);
-  pinMode(DIR_A, OUTPUT);
-  pinMode(PWM_B, OUTPUT);
-  pinMode(DIR_B, OUTPUT);
 
   // ----- BEGIN RADIO SETUP -----
   // initialize RFM95 with all settings listed
@@ -156,7 +144,7 @@ void loop() {
     {
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
-      //receiveState = radio.startReceive();  // start receiving again
+      receiveState = radio.startReceive();  // start receiving again
       digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
     }
 
@@ -238,6 +226,8 @@ void handleReceive()  // performs everything necessary when data comes in
     if(RXarray[0] == 2 && RXarray[2] == 255){
       //target = totalRotations; 
       deployed = true;
+      Serial.println("deployed");
+      transmitData();
     }
       
   }
