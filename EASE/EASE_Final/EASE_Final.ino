@@ -17,20 +17,20 @@
 #define NRSTPIN 2
 #define DIO1PIN 4
 
-#define totalDistance 17 //number of motor shaft rotations to complete
-#define gearRatio 326 // for testing output shaft accuracy: 302 for POLO, 349 for EASE
+#define totalDistance 17L //number of motor shaft rotations to complete
+#define gearRatio 325L // for testing output shaft accuracy: 302 for POLO, 349 for EASE
 //#define gearRatio 1  // for testing small distance accuracy
-#define pulsePerRotate 11  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
-#define screwPitch 8  // TPI of leadscrew
+#define pulsePerRotate 11L  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
+#define screwPitch 8L  // TPI of leadscrew
 
-#define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
+#define transmitDelay 20  // how many milliseconds to wait before transmitting stuff
 #define transmitInterval 5000  // milliseconds between transmissions
 
 RFM95 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
 // transmit variables
-unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int receiveTime = 0;  // stores the time when a packet was received
+unsigned long transmitTimer = 0;  // stores the time of the last transmission
+unsigned long receiveTime = 0;  // stores the time when a packet was received
 bool hasTransmitted = true;  // flag to keep track of when transmissions need to be made
 
 // receive array
@@ -50,8 +50,8 @@ bool isArmed = false;  // stores arm state (is auto deployment allowed)
 bool isDeploying = false;  // indcates if we're currently ejecting
 bool deployed = false;   // indicates when deployment is finished
 
-volatile unsigned int posi = 0; // specify posi as volatile
-unsigned int target = totalDistance * gearRatio * pulsePerRotate * screwPitch;
+volatile unsigned long posi = 0; // specify posi as volatile
+unsigned long target = totalDistance * gearRatio * pulsePerRotate * screwPitch;
 // sets the target to hit (should be 1 shaft rotation)
 
 void setup() {
@@ -65,8 +65,8 @@ void setup() {
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
 
-  //PCICR |= 0b00000010;  // enable interrupts on PC register
-  //PCMSK1 |= 0b00001000;  // use interrupt mask on D17/A3/PC3
+  PCICR |= 0b00000010;  // enable interrupts on PC register
+  PCMSK1 |= 0b00001000;  // use interrupt mask on D17/A3/PC3
 
   // ----- BEGIN RADIO SETUP -----
   // initialize RFM95 with all settings listed
@@ -142,6 +142,13 @@ void loop(){
     enableInterrupt = true;  // reenable the interrupt
   }
 
+  Serial.print(hasTransmitted);
+  Serial.print(" ");
+  Serial.print(receiveTime);
+  Serial.print(" ");
+  Serial.print(transmitTimer);
+  Serial.println();
+
   if((!hasTransmitted && millis() - receiveTime >= transmitDelay) || millis() - transmitTimer >= transmitInterval)
     transmitData();
   
@@ -205,10 +212,11 @@ void handleReceive()  // performs everything necessary when data comes in
     }
     
     if(RXarray[0] == 2){  // if command is from SOAR
-      if(RXarray[2] == 255)  // if the EASE byte is set
+      if(!isDeploying && !deployed && RXarray[2] == 255)  // if it's not deploying yet and the EASE byte is set
       {
-        deployed = true;
-        Serial.println("deployed");
+        isDeploying = true;
+        posi = 0;
+        Serial.println("deploy command received");
       }
     }
   }
