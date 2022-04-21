@@ -305,7 +305,7 @@ void loop()
   {
     transmitData();
   }
-  setMotor();
+  setMotors();
 }
 
 void setFlag(void)  // this function is called after complete packet transmission or reception
