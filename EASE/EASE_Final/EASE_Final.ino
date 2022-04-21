@@ -265,7 +265,7 @@ void transmitData()  // this function just retransmits the received array with a
     RXarray[2] = 1;
   }
   
-//  Serial.println(F("[RFM95] Sending array ... "));
+  Serial.println(F("[RFM95] Sending array ... "));
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
   digitalWrite(LED_2, HIGH);  // LED 2 on while transmit mode is active
 }
