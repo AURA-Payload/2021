@@ -24,7 +24,7 @@
 #define screwPitch 8  // TPI of leadscrew
 
 #define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
-#define transmitInterval 1000  // milliseconds between transmissions
+#define transmitInterval 5000  // milliseconds between transmissions
 
 RFM95 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
