@@ -245,13 +245,13 @@ void loop()
     if(isLevel && !easeActivated){
       easeActivated = true;
       Serial.println("Activating Ease");
-      transmitData();
+      //transmitData();
     } 
 
-    if(easeActivated && !easeDeployed){
-      radio.startReceive();
-      handleReceive();
-    }
+//    if(easeActivated && !easeDeployed){  // I don't think this is necessary, these steps are happening anyway
+//      radio.startReceive();
+//      handleReceive();
+//    }
   
     if(easeDeployed && !legsDeployed){
       Serial.println("Ease deployed");
@@ -344,9 +344,7 @@ void handleReceive()  // performs everything necessary when data comes in
     Serial.print("\t");
     Serial.print(RXarray[6]);
     Serial.print("\t");
-    Serial.print(RXarray[7]);
-    Serial.print("\t");
-    Serial.println(RXarray[8]);
+    Serial.println(RXarray[7]);
     
     Serial.print(F("\t[RFM97] RSSI: "));  // print RSSI if desired
     Serial.print(radio.getRSSI());
