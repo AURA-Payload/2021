@@ -239,10 +239,10 @@ void loop()
   
     if(isLanded && !isLevel){
       level();
-      Serial.println("Leveling done");
     }
   
     if(isLevel && !easeActivated){
+      Serial.println("Leveling done");
       easeActivated = true;
       Serial.println("Ease set to activate");
     }
@@ -305,6 +305,7 @@ void loop()
   {
     transmitData();
   }
+  setMotor();
 }
 
 void setFlag(void)  // this function is called after complete packet transmission or reception
@@ -472,11 +473,12 @@ void level(){
     if(abs(errorTerm) < levelTolerance){
       Serial.println("\tLevel :)");
       isLevel = true;
+      motorValue = 0;
     }
     else{
       Serial.println("\tNot level >:(");
     }
-    setMotorA(motorValue);
+    soarVar = motorValue;
   
     delay(25);
   }
