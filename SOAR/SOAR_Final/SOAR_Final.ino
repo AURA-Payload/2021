@@ -193,6 +193,12 @@ void setup()
   Serial.println("Listening for packets");
   receiveState = radio.startReceive();  // start listening
   digitalWrite(LED_2, LOW);
+
+  //TESTING VARIABLES = REMOVE!!!
+  armVar = 1;
+  isLaunched = true;
+  isLanded = true;
+  
 }
 
 void loop()
@@ -203,7 +209,7 @@ void loop()
   
     if(!isLaunched && currentAlt > launchThresh)
     {
-      isLaunched = 1;
+      isLaunched = true;
       Serial.println("Launched");
       // Transmit Launched
       transmitData();
@@ -218,7 +224,7 @@ void loop()
         checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
         if(checkAlt1 - noiseLimit < checkAlt2 < checkAlt1 + noiseLimit)
         {
-          isLanded = 1;
+          isLanded = true;
           Serial.println("Landed");
           //Transmit Landed
           transmitData();
@@ -228,21 +234,25 @@ void loop()
   
     if(isLanded && !isLevel){
       level();
+      Serial.println("Leveling done");
     }
   
     if(isLevel && !easeActivated){
       easeActivated = true;
+      Serial.println("Activating Ease");
       transmitData();
     }
   
   
     if(easeDeployed && !legsDeployed){
+      Serial.println("Ease deployed");
       legsVar = 50;
       setMotors();
       delay(3000);
       legsVar = 0;
       setMotors();
       legsDeployed = true;
+      Serial.println("Legs Deployed");
     }
   
     if(legsDeployed && !slsDeployed){
@@ -253,6 +263,7 @@ void loop()
       soarVar = 0;
       setMotors();
       slsDeployed = true;
+      Serial.println("SLS Deployed");
     }
 
     if(slsDeployed && !rangeFinding){
@@ -260,6 +271,7 @@ void loop()
       RXarray[1] = RXarray[1] |= 0b10000000; //Set bit to let MARCO know we are ready for range finding
       transmitData();
       rangeFinding = true;
+      Serial.println("Activating Range Finding");
     }
   }
   
@@ -369,7 +381,7 @@ void handleReceive()  // performs everything necessary when data comes in
 
     if(RXarray[0] == 1) //if value is from EASE, check to see if deployed
     {
-      if(RXarray[2] == 255) //Some flag value that EASE can set once deployed and transmit - does not have to be -1. 
+      if(RXarray[2] == 1) //Some flag value that EASE can set once deployed and transmit - does not have to be 1. 
       {
         easeDeployed = true;
       }
@@ -444,17 +456,18 @@ void setMotorA(int speedVal)  // speedVal between -255 and 255
 
 void level(){
   /* Get a new sensor event */ 
-  sensors_event_t event; 
-  accel.getEvent(&event);
   while(!isLevel){
+    sensors_event_t event; 
+    accel.getEvent(&event);
     /* Display the results (acceleration is measured in m/s^2) */
   //  Serial.print("Y: ");
   //  Serial.print(event.acceleration.y);
   //  Serial.print(" m/s^2\t");
   
     errorTerm = levelValue - event.acceleration.y;
-    if(event.acceleration.z < 0)
+    if(event.acceleration.z < 0){
       errorTerm *= 1000;
+    }
     motorValue = errorTerm * pGain;
     motorValue = constrain(motorValue, -255, 255);
   

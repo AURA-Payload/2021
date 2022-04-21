@@ -44,6 +44,8 @@ bool txComplete = true;  // indicates the last transmission is done
 // control variables
 int controls[] = {0, 0, 0}; // stores arm flag and motor values
 
+bool deployed = false;
+
 volatile int posi = 0; // specify posi as volatile
 
 int kp = 5;
@@ -67,7 +69,6 @@ int printerval = 10;  // millisecond interval to print values
 unsigned long printTime = 0;  // timer for printing stuff
 
 void setup() {
-  target = totalRotations;
   Serial.begin(115200);
   pinMode(ENCA,INPUT);
   pinMode(ENCB,INPUT);
@@ -155,14 +156,15 @@ void loop() {
     {
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
+      //receiveState = radio.startReceive();  // start receiving again
       digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
     }
 
     else  // last action was receive
     {
       handleReceive();  // this stores received data to RXarray and saves RSSI
-      setMotor();  // sets the motors based on controls array
-      //delay(10);
+      setMotor(dir,pwr,PWM_1,DIR_1); // sets the motors based on controls array
+      delay(10);
       //transmitData();  // send a message back to GS
     }
     receiveState = radio.startReceive();  // start receiving again
@@ -226,13 +228,21 @@ void handleReceive()  // performs everything necessary when data comes in
    
     //controls[0] = RXarray[1] & 0b00000001;  // controls[0] is set to the state of the arm bit
 
-    controls[1] = RXarray[2];  // motor speed from RXarray
+    pwr = abs(RXarray[2]);  // motor speed from RXarray
     if(~RXarray[1] & 0b00000010)  // if direction bit is not set
-      controls[1] *= -1;
+      dir *= -1;
+    else{
+      dir = 1;
+    }
+    
+    if(RXarray[0] == 2 && RXarray[2] == 255){
+      target = totalRotations; 
+      deployed = true;
+    }
       
   }
 
-  setMotor();
+  setMotor(dir,pwr,PWM_1,DIR_1);
   
 //  else if (receiveState == RADIOLIB_ERR_CRC_MISMATCH)  // packet received malformed
 //    Serial.println(F("[RFM95] CRC error!"));
@@ -251,6 +261,9 @@ void transmitData()  // this function just retransmits the received array with a
   transmitFlag = true;
   txComplete = false;
   transmitTimer = millis();  // reset transmit timer
+  if(deployed){
+    RXarray[2] = 1;
+  }
   
 //  Serial.println(F("[RFM95] Sending array ... "));
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
