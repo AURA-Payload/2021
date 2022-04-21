@@ -48,7 +48,7 @@
 #define DIO1PIN 15
 
 #define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
-#define transmitInterval 1000  // milliseconds between transmissions
+#define transmitInterval 250  // milliseconds between transmissions
 
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
@@ -244,14 +244,8 @@ void loop()
   
     if(isLevel && !easeActivated){
       easeActivated = true;
-      Serial.println("Activating Ease");
-      //transmitData();
-    } 
-
-//    if(easeActivated && !easeDeployed){  // I don't think this is necessary, these steps are happening anyway
-//      radio.startReceive();
-//      handleReceive();
-//    }
+      Serial.println("Ease set to activate");
+    }
   
     if(easeDeployed && !legsDeployed){
       Serial.println("Ease deployed");
@@ -307,7 +301,7 @@ void loop()
     enableInterrupt = true;  // reenable the interrupt
   }
 
-  if((!hasTransmitted && millis() - receiveTime >= transmitDelay) || millis() - transmitTimer >= transmitInterval)
+  if(/*(!hasTransmitted && millis() - receiveTime >= transmitDelay) || */millis() - transmitTimer >= transmitInterval)
   {
     transmitData();
   }
@@ -402,7 +396,22 @@ void transmitData()  // this function just retransmits the received array with a
   hasTransmitted = true;
   transmitTimer = millis();  // reset transmit timer
   
-  Serial.println(F("[RFM97] Sending array ... "));
+  Serial.print(F("[RFM97] Sending array ... "));
+  Serial.print(RXarray[0]);
+  Serial.print("\t");
+  Serial.print(RXarray[1], BIN);
+  Serial.print("\t");
+  Serial.print(RXarray[2]);
+  Serial.print("\t");
+  Serial.print(RXarray[3]);
+  Serial.print("\t");
+  Serial.print(RXarray[4]);
+  Serial.print("\t");
+  Serial.print(RXarray[5]);
+  Serial.print("\t");
+  Serial.print(RXarray[6]);
+  Serial.print("\t");
+  Serial.println(RXarray[7]);
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
 }
 
@@ -433,16 +442,6 @@ void setMotors()
   analogWrite(PWM_B, abs(slsVar));
   analogWrite(LEGS_PWM_1, abs(legsVar));
   analogWrite(LEGS_PWM_2, abs(legsVar));
-}
-
-void setMotorA(int speedVal)  // speedVal between -255 and 255
-{
-  if(speedVal > 0)  // speed is positive
-    digitalWrite(DIR_A, HIGH);
-  else
-    digitalWrite(DIR_A, LOW);
-    
-  analogWrite(PWM_A, abs(speedVal));
 }
 
 void level(){
