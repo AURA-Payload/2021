@@ -236,7 +236,7 @@ void handleReceive()  // performs everything necessary when data comes in
     }
     
     if(RXarray[0] == 2 && RXarray[2] == 255){
-      target = totalRotations; 
+      //target = totalRotations; 
       deployed = true;
     }
       
