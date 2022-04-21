@@ -58,14 +58,16 @@ void setup()
   else
     Serial.println("LSM6DS33 initialized");
     
-  imu.enableDefault();
+  imu.enableDefault();  // set default options
+  
+  imu.writeReg(LSM6::CTRL1_XL, 0b10000100);
   // ODR_XL = 1000 (1.66 kHz (high performance))
   // FS_XL = 01 (+/-16 g full scale)
   // BW_XL = 00 (400 Hz) (Overridden when XL_BW_SCAL_ODR=0)
-  imu.writeReg(LSM6::CTRL1_XL, 0b10000100);
-  // ODR = 1000 (1.66 kHz (high performance))
-  // FS_G = 11 (2000 dps)
+  
   imu.writeReg(LSM6::CTRL2_G, 0b10001100);
+  // ODR_G = 1000 (1.66 kHz (high performance))
+  // FS_G = 11 (2000 dps)
   
   delay(500);
   
