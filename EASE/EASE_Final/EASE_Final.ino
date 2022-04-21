@@ -130,19 +130,19 @@ void loop(){
     {
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
-      receiveState = radio.startReceive();  // start receiving again
+      //receiveState = radio.startReceive();  // start receiving again
       digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
     }
 
-    else  // last action was receive
-    {
+    else{  // last action was receive
       handleReceive();  // this stores received data to RXarray and saves RSSI
     }
-    //receiveState = radio.startReceive();  // start receiving again
+    Serial.println("Listening for packets");
+    receiveState = radio.startReceive();  // start receiving again
     enableInterrupt = true;  // reenable the interrupt
   }
 
-  if((!hasTransmitted && receiveTime + transmitDelay >= millis()) || transmitTimer + transmitInterval > millis())
+  if((!hasTransmitted && receiveTime + transmitDelay >= millis()) || millis() - transmitTimer >= transmitInterval)
   {
     transmitData();
   }
@@ -231,6 +231,9 @@ void transmitData()  // this function just retransmits the received array with a
   
   transmitFlag = true;
   txComplete = false;
+  transmitTimer = millis();
+  hasTransmitted = true;
+  
   if(deployed){
     RXarray[2] = 1;
   }
@@ -252,8 +255,6 @@ void transmitData()  // this function just retransmits the received array with a
   Serial.print("\t");
   Serial.println(RXarray[7]);
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
-  transmitTimer = millis();
-  digitalWrite(LED_2, HIGH);  // LED 2 on while transmit mode is active
 }
 
 void setMotor(int pwmVal)  // just sets the motor based on the PWM value
