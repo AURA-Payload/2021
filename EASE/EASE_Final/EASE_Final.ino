@@ -142,10 +142,8 @@ void loop(){
     enableInterrupt = true;  // reenable the interrupt
   }
 
-  if((!hasTransmitted && receiveTime + transmitDelay >= millis()) || millis() - transmitTimer >= transmitInterval)
-  {
+  if((!hasTransmitted && millis() - receiveTime >= transmitDelay) || millis() - transmitTimer >= transmitInterval)
     transmitData();
-  }
   
   setMotor(motorSpeed);  // update the motor
 }
