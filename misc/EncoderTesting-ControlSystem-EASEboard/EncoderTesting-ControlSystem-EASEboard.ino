@@ -1,65 +1,53 @@
 // Encoder test code with control system - derivative and integral terms removed
+// This code uses the PCINT function on DIO17 (PCINT11)
 // Based on code from Curio Res: https://github.com/curiores/ArduinoTutorials
 // Watch this video for more information: https://www.youtube.com/watch?v=dTGITLnYAY0
 
-#define ENCA PCINT10 // interrupt for pin 16
-#define ENCB 17 // interrupt is PCINT11
+#define ENCA 17 // interrupt on pin 17 (PC3)
+#define ENCB 16
 #define PWM_1 9
 #define DIR_1 8
 
-volatile int posi = 0; // specify posi as volatile
+#define totalDistance 17L //number of motor shaft rotations to complete
+#define gearRatio 326L // for testing output shaft accuracy: 302 for POLO, 349 for EASE
+//#define gearRatio 1L  // for testing small distance accuracy
+#define pulsePerRotate 11L  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
+#define screwPitch 8L  // TPI of leadscrew
 
-int kp = 5;
-int pos = 0;
-int e = 0;
-int u = 0;
-int pwr = 0;
+volatile long posi = 0; // specify posi as volatile
+
+long kp = 1;
+long pos = 0;
+long e = 0;
+long u = 0;
+long pwr = 0;
 int dir = 1;
 
-int totalDistance = 17; //number of motor shaft rotations to complete
-int gearRatio = 349; // for testing output shaft accuracy: 302 for POLO, 349 for EASE
-//int gearRatio = 1;  // for testing small distance accuracy
-int pulsePerRotate = 12;  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
-int screwPitch = 8;  // TPI of leadscrew
-int totalRotations = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target to hit (should be 1 shaft rotation)
-int target = 0;
+long target = 0;
 
-int targetInterval = 3000;  // 2.5 seconds between switching targets
-unsigned long targetSwitch = 0;
 int printerval = 10;  // millisecond interval to print values
 unsigned long printTime = 0;  // timer for printing stuff
 
 void setup() {
-  target = totalRotations;
+  target = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target
   Serial.begin(115200);
   pinMode(ENCA,INPUT);
   pinMode(ENCB,INPUT);
-  attachInterrupt(ENCA,readEncoder,RISING);
   
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
+  digitalWrite(PWM_1,LOW);
+  digitalWrite(DIR_1,LOW);
 
+  PCICR |= 0b00000010;  // enable interrupts on PC register
+  PCMSK1 |= 0b00001000;  // use interrupt mask on D17/A3/PC3
+
+  delay(1000);
+  Serial.println(target);
   delay(1000);
 }
 
-void loop() {
-//  if(Serial.available())  // reset position when serial received
-//  {
-//    Serial.read();
-//    posi = 0;
-//  }
-
-//  if(millis() >= targetSwitch + targetInterval)  // invert target periodically
-//  {
-//    target = target + totalRotations;
-//    targetSwitch = millis();
-//  }
-
-  // Read the position
-//  noInterrupts(); // disable interrupts temporarily while reading
-//  pos = posi;
-//  interrupts(); // turn interrupts back on
-  
+void loop() {  
   // error
   e = posi - target;
 
@@ -81,18 +69,21 @@ void loop() {
   // signal the motor
   setMotor(dir,pwr,PWM_1,DIR_1);
 
-//  if(millis() >= printTime + printerval)
-//  {
-//    Serial.print(target);
-//    Serial.print(" ");
-//    Serial.print(pos);
-//    Serial.print(" ");
-//    Serial.print(pwr * dir);
-//    Serial.println();
-//
-//    printTime = millis();
-//  }
-//  delayMicroseconds(10);
+  if(millis()-printTime >= printerval)
+  {
+    Serial.print(target);
+    Serial.print(" ");
+    Serial.print(posi);
+    Serial.print(" ");
+    //Serial.print(u);
+    //Serial.print(" ");
+    //Serial.print(pwr);
+    //Serial.print(" ");
+    //Serial.print(dir);
+    Serial.println();
+
+    printTime = millis();
+  }
 }
 
 void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
@@ -104,10 +95,13 @@ void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
     digitalWrite(dirPin,LOW);
 }
 
-void readEncoder(){
-  if(digitalRead(ENCB) > 0)
-    posi++;
+ISR (PCINT1_vect){  // encoder read function
+  if(PINC & 0b00001000)  // if interrupt is high (rising signal)
+  {
+    if(PINC & 0b00000100)  // if PC2 (DIO16) is high
+      posi++;  // increment position
     
-  else
-    posi--;
+    else  // is PC2 is low
+      posi--;  // decrement position
+  }
 }
