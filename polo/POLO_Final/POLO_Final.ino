@@ -34,7 +34,8 @@ unsigned long transmitTimer = 0;  // stores the time of the last transmission
 unsigned long transmitInterval = 2000;  // stores the time of the last transmission
 unsigned int receiveTime = -1;
 unsigned int analogTime = -1; 
-float distance = -1; 
+float distance = 0; 
+int rounds = 0;
 
 volatile int posi = 0; // specify posi as volatile
 
@@ -66,6 +67,9 @@ bool directionFound = false;
 bool directionFinding = false;
 bool directed = false;
 bool radioReceived = false;
+bool calculated = false;
+
+String gridString;
 
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
@@ -165,7 +169,7 @@ void setup() {
 void loop() {
   if(directionFinding && !directionFound){
     if(totalRotations <= posi){
-      marcoDir = bestPosi;
+      marcoDirection = bestPosi;
       directionFound = true; 
     }
     currentRSSI = radio.getRSSI();
@@ -217,10 +221,16 @@ void loop() {
     
   }
 
-  if(radioReceived && analogRead(TONE_IN) > 10){
+  if(radioReceived && analogRead(TONE_IN) >= 300){
+    float roundDistance;
+    rounds++;
     analogTime = micros();
     radioReceived = false;
-    distance = ((analogTime - receiveTime) * (.001125))
+    roundDistance = ((analogTime - receiveTime) * (.001125));
+    distance = (roundDistance + distance)/rounds;
+    if(rounds >= 3){
+      calculateGrid();
+    }
   }
   
   if(operationDone)  // if the last operation is finished
@@ -253,6 +263,21 @@ void loop() {
       transmitData();
     }
   }
+
+  if(calculated){
+    transmitGrid();
+  }
+}
+
+void transmitGrid(){
+  RXarray[0] = 3;  // set POLO's system address
+  
+  wasTX = true;
+  txComplete = false;
+  transmitTimer = millis();  // reset transmit timer
+  
+  //  Serial.println(F("[RFM97] Sending array ... "));
+  transmitState = radio.startTransmit(gridString);  // transmit array
 }
 
 void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
@@ -285,6 +310,7 @@ void calculateGrid(){
 
   int gridX;
   int gridY;
+  int gridBox;
   
   if(theta == 0 || theta == 360){
     xDist = 0;
@@ -309,8 +335,8 @@ void calculateGrid(){
   }
   else if(theta < 270){
     theta = theta - 180;
-    xDist = -(distance * cos(theta))
-    yDist = (distance * sin(theta))
+    xDist = -(distance * cos(theta));
+    yDist = (distance * sin(theta));
   }
   else if(theta == 270){
     xDist = -(distance);
@@ -318,17 +344,20 @@ void calculateGrid(){
   }
   else {
     theta = theta - 270;
-    xDist = -(distance * sin(theta))
-    yDist = -(distance * cos(theta))
+    xDist = -(distance * sin(theta));
+    yDist = -(distance * cos(theta));
   }
 
   finalX = xDist + groundX;
   finalY = yDist + groundY;
 
-  xGrid = finalX/250;
-  yGrid = finalY/250;
+  gridX = finalX/250;
+  gridY = finalY/250;
 
-  gridBox = 1 + xGrid + (yGrid * 20);
+  gridBox = 1 + gridX + (gridY * 20);
+
+  gridString = String(gridBox);
+  calculated = true;
 }
 
 void setFlag(void)  // this function is called after complete packet transmission or reception
