@@ -8,91 +8,61 @@
 #define PWM_1 9
 #define DIR_1 8
 
-#define totalDistance 17L //number of motor shaft rotations to complete
-#define gearRatio 326L // for testing output shaft accuracy: 302 for POLO, 349 for EASE
-//#define gearRatio 1L  // for testing small distance accuracy
-#define pulsePerRotate 11L  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
-#define screwPitch 8L  // TPI of leadscrew
+#define totalDistance 17 //number of motor shaft rotations to complete
+#define gearRatio 326 // for testing output shaft accuracy: 302 for POLO, 349 for EASE
+//#define gearRatio 1  // for testing small distance accuracy
+#define pulsePerRotate 11  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
+#define screwPitch 8  // TPI of leadscrew
 
-volatile long posi = 0; // specify posi as volatile
-
-long kp = 1;
-long pos = 0;
-long e = 0;
-long u = 0;
-long pwr = 0;
-int dir = 1;
-
-long target = 0;
+volatile unsigned int posi = 0; // specify posi as volatile
+unsigned int target = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // how many encoder pulses to travel
 
 int printerval = 10;  // millisecond interval to print values
 unsigned long printTime = 0;  // timer for printing stuff
 
 void setup() {
-  target = totalDistance * gearRatio * pulsePerRotate * screwPitch;  // sets the target
   Serial.begin(115200);
   pinMode(ENCA,INPUT);
   pinMode(ENCB,INPUT);
   
   pinMode(PWM_1,OUTPUT);
   pinMode(DIR_1,OUTPUT);
-  digitalWrite(PWM_1,LOW);
+  digitalWrite(PWM_1,LOW);  // don't let the motor rotate at startup
   digitalWrite(DIR_1,LOW);
 
   PCICR |= 0b00000010;  // enable interrupts on PC register
   PCMSK1 |= 0b00001000;  // use interrupt mask on D17/A3/PC3
 
   delay(1000);
-  Serial.println(target);
+  Serial.println(target);  // print how far we're going
   delay(1000);
 }
 
 void loop() {  
-  // error
-  e = posi - target;
-
-  // control signal
-  u = kp*e;
-
-  // motor power
-  pwr = abs(u);
-  if(pwr > 255){
-    pwr = 255;
-  }
-
-  // motor direction
-  dir = 1;
-  if(u < 0){
-    dir = -1;
-  }
-
-  // signal the motor
-  setMotor(dir,pwr,PWM_1,DIR_1);
+  if(posi < target)  // we haven't reached the target distance
+    setMotor(255);  // run the motor
+  else  // if we have reached the target
+    setMotor(0);  // stop the motor
 
   if(millis()-printTime >= printerval)
   {
     Serial.print(target);
     Serial.print(" ");
     Serial.print(posi);
-    Serial.print(" ");
-    //Serial.print(u);
-    //Serial.print(" ");
-    //Serial.print(pwr);
-    //Serial.print(" ");
-    //Serial.print(dir);
     Serial.println();
 
     printTime = millis();
   }
 }
 
-void setMotor(int dir, int pwmVal, int pwmPin, int dirPin){
-  analogWrite(pwmPin,pwmVal);
+void setMotor(int pwmVal)
+{
+  analogWrite(PWM_1,abs(pwmVal));
   
-  if(dir > 0)
-    digitalWrite(dirPin,HIGH);
+  if(pwmVal > 0)
+    digitalWrite(DIR_1,HIGH);
   else
-    digitalWrite(dirPin,LOW);
+    digitalWrite(DIR_1,LOW);
 }
 
 ISR (PCINT1_vect){  // encoder read function
