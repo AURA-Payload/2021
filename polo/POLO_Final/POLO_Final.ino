@@ -10,7 +10,10 @@
 #define LED_2 22
 #define LED_1 23
 
+#define TONE_IN A2
+
 #include <RadioLib.h>  // include radio library
+#include <math.h>       
 
 // motor pins
 #define PWM_A 6  // PWM pin, motor A (SOAR)
@@ -29,7 +32,9 @@
 
 unsigned long transmitTimer = 0;  // stores the time of the last transmission
 unsigned long transmitInterval = 2000;  // stores the time of the last transmission
-
+unsigned int receiveTime = -1;
+unsigned int analogTime = -1; 
+float distance = -1; 
 
 volatile int posi = 0; // specify posi as volatile
 
@@ -55,9 +60,12 @@ unsigned long printTime = 0;  // timer for printing stuff
 float currentRSSI = -1000000;
 float bestRSSI = -1000000;
 int bestPosi = -1;
+int marcoDirection = -1; 
 
 bool directionFound = false;
 bool directionFinding = false;
+bool directed = false;
+bool radioReceived = false;
 
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
@@ -155,10 +163,37 @@ void setup() {
 }
 
 void loop() {
-  if(directionFinding){
+  if(directionFinding && !directionFound){
+    if(totalRotations <= posi){
+      marcoDir = bestPosi;
+      directionFound = true; 
+    }
+    currentRSSI = radio.getRSSI();
+    if(currentRSSI > bestRSSI){
+      bestRSSI = currentRSSI;
+      bestPosi = posi;
+      Serial.print("Best RSSI: ");
+      Serial.println(bestRSSI); 
+      Serial.print("Best Posi: ");
+      Serial.println(bestPosi);
+    }
+    dir = 1;
+    pwr = 30;
+
+    // signal the motor
+    setMotor(dir,pwr,PWM_1,DIR_1);
+  }
+  
+  if(directionFound && !directed){
+    target = marcoDirection;
+    
     // error
     e = posi - target;
-  
+    
+    if(abs(e) < 5){
+      directed = true; 
+    }
+    
     // control signal
     u = kp*e;
   
@@ -173,22 +208,20 @@ void loop() {
     if(u < 0){
       dir = -1;
     }
-    
-    currentRSSI = radio.getRSSI();
-    if(currentRSSI > bestRSSI){
-      bestRSSI = currentRSSI;
-      bestPosi = posi;
-  
-      Serial.print("Best RSSI: ");
-    Serial.println(bestRSSI);
-    Serial.print("Best Posi: ");
-    Serial.println(bestPosi);
-    }
-    
     // signal the motor
     setMotor(dir,pwr,PWM_1,DIR_1);
   }
 
+  //Range finding
+  if(directed){
+    
+  }
+
+  if(radioReceived && analogRead(TONE_IN) > 10){
+    analogTime = micros();
+    radioReceived = false;
+    distance = ((analogTime - receiveTime) * (.001125))
+  }
   
   if(operationDone)  // if the last operation is finished
   {
@@ -239,11 +272,73 @@ void readEncoder(){
     posi--;
 }
 
+void calculateGrid(){
+  float theta = marcoDirection * (0.1703);
+  float xDist;
+  float yDist;
+
+  float groundX = 0;
+  float groundY = 0;
+
+  float finalX;
+  float finalY;
+
+  int gridX;
+  int gridY;
+  
+  if(theta == 0 || theta == 360){
+    xDist = 0;
+    yDist = -(distance);
+  }
+  else if(theta < 90){
+    xDist = (distance * sin(theta));
+    yDist = -(distance * cos(theta));
+  }
+  else if(theta == 90){
+    xDist = (distance);
+    yDist = 0;
+  }
+  else if(theta < 180){
+    theta = theta - 90;
+    xDist = (distance * cos(theta));
+    yDist = (distance * sin(theta));
+  }
+  else if(theta == 180){
+    xDist = 0;
+    yDist = (distance);
+  }
+  else if(theta < 270){
+    theta = theta - 180;
+    xDist = -(distance * cos(theta))
+    yDist = (distance * sin(theta))
+  }
+  else if(theta == 270){
+    xDist = -(distance);
+    yDist = 0;
+  }
+  else {
+    theta = theta - 270;
+    xDist = -(distance * sin(theta))
+    yDist = -(distance * cos(theta))
+  }
+
+  finalX = xDist + groundX;
+  finalY = yDist + groundY;
+
+  xGrid = finalX/250;
+  yGrid = finalY/250;
+
+  gridBox = 1 + xGrid + (yGrid * 20);
+}
+
 void setFlag(void)  // this function is called after complete packet transmission or reception
 {
   if(!enableInterrupt)  // check if the interrupt is enabled
     return;
-
+  if(directed){
+    receiveTime = micros();
+    radioReceived = true; 
+  }
   operationDone = true;  // something happened, set the flag
 }
 
