@@ -295,19 +295,19 @@ void loop()
     {
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
-      receiveState = radio.startReceive();  // start receiving again
+      //receiveState = radio.startReceive();  // start receiving again
       digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
     }
 
-    else  // last action was receive
-    {
+    else{  // last action was receive
       handleReceive();  // this stores received data to RXarray and saves RSSI
     }
-    //receiveState = radio.startReceive();  // start receiving again
+    Serial.println("Listening for packets");
+    receiveState = radio.startReceive();  // start receiving again
     enableInterrupt = true;  // reenable the interrupt
   }
 
-  if((!hasTransmitted && receiveTime + transmitDelay >= millis()) || transmitTimer + transmitInterval > millis())
+  if((!hasTransmitted && millis() - receiveTime >= transmitDelay) || millis() - transmitTimer >= transmitInterval)
   {
     transmitData();
   }
