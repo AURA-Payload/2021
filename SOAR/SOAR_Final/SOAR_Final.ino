@@ -182,7 +182,7 @@ void setup()
 
   setMotors();  // sets the motors based on controls array
 
-  while(bmpStart + 30000 > millis())  // wait until the BMP has been on for 30s
+  while(bmpStart + 5000 > millis())  // wait until the BMP has been on for 30s
     delay(10);
   
   initAlt = bmp.readAltitude(LOCALPRESSURE);
@@ -241,8 +241,12 @@ void loop()
       easeActivated = true;
       Serial.println("Activating Ease");
       transmitData();
+    } 
+
+    if(easeActivated && !easeDeployed){
+      radio.startReceive();
+      handleReceive();
     }
-  
   
     if(easeDeployed && !legsDeployed){
       Serial.println("Ease deployed");
@@ -404,14 +408,14 @@ void transmitData()  // this function just retransmits the received array with a
 
   //Ease activation
   if(easeActivated){
-    RXarray[2] = 250;
+    RXarray[2] = 255;
   }
   
   transmitFlag = true;
   txComplete = false;
   transmitTimer = millis();  // reset transmit timer
   
-//  Serial.println(F("[RFM97] Sending array ... "));
+  Serial.println(F("[RFM97] Sending array ... "));
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
 }
 
