@@ -7,14 +7,14 @@
 
 #define TONE_IN A2  // input pin is A2 (DIO16)
 #define sampleDuration 30  // slightly longer than half the input signal period (40us/2 + 10)
-#define ultrasoundThreshold 300  // 
+#define ultrasoundThreshold 300  // threshold value of ultrasonic input
 unsigned int sampleStart = 0;
 int sampleEnd = 0;
 int maxInput = 0;
 int minInput = 1024;
 int currentInput = 0;
 int strength = 500;
-double smoothingVal = 0.05;
+double smoothingVal = 0.075;
 
 void setup()
 {
