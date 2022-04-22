@@ -51,7 +51,7 @@ byte rangeState = 0;  // 1 = direction find started, 2 = ranging started, 3 = ra
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 100;  // time between tranmissions
+unsigned int transmitInterval = 50;  // time between tranmissions
 unsigned int transmitBlankTime = 5;  // dead time after a transmission
 
 unsigned int beaconTimer = 0;
