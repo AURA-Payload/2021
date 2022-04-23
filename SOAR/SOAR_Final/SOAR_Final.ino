@@ -71,7 +71,6 @@ float levelValue = 1.18;  // target value for level
 float levelTolerance = 0.1;  // acceptable range for "level"
 float errorTerm = 0;
 float pGain = 50;
-int motorValue = 0;
 bool isLevel = false; //flag for when leveling is done
 
 // Deployment variables
@@ -239,8 +238,36 @@ void loop()
       }
     }
   
-    if(isLanded && !isLevel){
-      level();
+    if(isLanded && !isLevel){  // run levelling code
+      sensors_event_t event;
+      accel.getEvent(&event);
+      //Display the results (acceleration is measured in m/s^2)
+//      Serial.print("Y: ");
+//      Serial.print(event.acceleration.y);
+//      Serial.print(" m/s^2\t");
+    
+      errorTerm = levelValue - event.acceleration.y;
+      if(event.acceleration.z < 0){
+        errorTerm *= 1000;
+      }
+      soarVar = errorTerm * pGain;
+      soarVar = constrain(motorValue, -255, 255);
+    
+      //Serial.print("SOAR motor value: ");
+      Serial.println(soarVar);
+      
+  //    if((levelValue - levelTolerance) < event.acceleration.y && event.acceleration.y < (levelValue + levelTolerance))
+  //      Serial.println("\tLevel :)");
+  //    else
+  //      Serial.println("\tNot level >:(");
+    
+      if(abs(errorTerm) < levelTolerance){
+        Serial.println("\tLevel :)");
+        isLevel = true;
+        soarVar = 0;
+      }
+      else
+        Serial.println("\tNot level >:(");
     }
   
     if(isLevel && !easeActivated){
@@ -445,43 +472,4 @@ void setMotors()
   analogWrite(PWM_B, abs(slsVar));
   analogWrite(LEGS_PWM_1, abs(legsVar));
   analogWrite(LEGS_PWM_2, abs(legsVar));
-}
-
-void level(){
-  /* Get a new sensor event */ 
-  if(!isLevel){
-    sensors_event_t event; 
-    accel.getEvent(&event);
-    /* Display the results (acceleration is measured in m/s^2) */
-  //  Serial.print("Y: ");
-  //  Serial.print(event.acceleration.y);
-  //  Serial.print(" m/s^2\t");
-  
-    errorTerm = levelValue - event.acceleration.y;
-    if(event.acceleration.z < 0){
-      errorTerm *= 1000;
-    }
-    motorValue = errorTerm * pGain;
-    motorValue = constrain(motorValue, -255, 255);
-  
-    //Serial.print("MotorVal: ");
-    Serial.println(motorValue);
-    
-//    if((levelValue - levelTolerance) < event.acceleration.y && event.acceleration.y < (levelValue + levelTolerance))
-//      Serial.println("\tLevel :)");
-//    else
-//      Serial.println("\tNot level >:(");
-  
-    if(abs(errorTerm) < levelTolerance){
-      Serial.println("\tLevel :)");
-      isLevel = true;
-      motorValue = 0;
-    }
-    else{
-      Serial.println("\tNot level >:(");
-    }
-    soarVar = motorValue;
-  
-    delay(25);
-  }
 }
