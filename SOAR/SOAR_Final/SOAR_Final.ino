@@ -55,12 +55,13 @@ RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);  // sensor objects
 Adafruit_BMP280 bmp; // BMP connected I2C
 
+unsigned long altInterval = 250;
+unsigned long altTimer = 0;  // stores timestamps of altitude samples
 float initAlt = 0;  // stores altitude at ground level
-float currentAlt = 10000;
-float checkAlt1 = 10000;
-float checkAlt2 = 10000;
-int launchThresh = 500;  // rocket must pass this altitude for landing detection to proceed
-int altRange = 2; //Amount of meters (+ or -) the rocket can be above/below the starting value.
+float checkAlt1 = 0;  // stores the previous altitude sample
+float checkAlt2 = 0;  // stores the current altitude sample
+int launchThresh = 609;  // rocket must pass this altitude (meters) for landing detection to proceed
+int altRange = 10; //Amount of meters (+ or -) the rocket can be above/below the starting value.
 float noiseLimit = 0.1;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
 bool isLaunched = false;  // flag for when launch has occurred
 bool isLanded = false;
@@ -69,15 +70,17 @@ bool isLanded = false;
 float levelValue = 1.18;  // target value for level
 float levelTolerance = 0.1;  // acceptable range for "level"
 float errorTerm = 0;
-float pGain = 30;
+float pGain = 50;
 int motorValue = 0;
 bool isLevel = false; //flag for when leveling is done
 
 // Deployment variables
 bool easeActivated = false;
 bool easeDeployed = false;
+bool legsActivated = false;
 bool legsDeployed = false;
-bool slsDeployed = false; 
+bool slsActivated = false;
+bool slsDeployed = false;
 bool fullyDeployed = false;
 bool rangeFinding = false;
 
@@ -98,8 +101,7 @@ int lastRSSI = 0;  // saves RSSI to be transmitted
 unsigned long receiveTime = 0;  // stores the time when a packet was received
 bool hasTransmitted = true;
 
-
-// control variables
+// motor speed control variables
 int armVar = 0;
 int soarVar = 0;
 int slsVar = 0;
@@ -163,7 +165,7 @@ void setup()
                              8,  // preamble length (symbols)
                              0);  // gain (0 is automatic control)
   radio.setCRC(true);  // enables cyclic redundancy check
-  delay(500);
+  delay(10);
 
   if (receiveState == RADIOLIB_ERR_NONE)  // if radio initialized correctly
   {
@@ -187,7 +189,7 @@ void setup()
 
   setMotors();  // sets the motors based on controls array
 
-  while(bmpStart + 5000 > millis())  // wait until the BMP has been on for 30s
+  while(bmpStart + 20000 > millis())  // wait until the BMP has been on for 20s
     delay(10);
   
   initAlt = bmp.readAltitude(LOCALPRESSURE);
@@ -212,11 +214,11 @@ void loop()
   {
     currentAlt = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // make the altitude reading relative to ground level
   
-    if(!isLaunched && currentAlt > launchThresh)
+    if(!isLaunched && (bmp.readAltitude(LOCALPRESSURE) - initAlt) > launchThresh)  // if current altitude is greater than threshold
     {
       isLaunched = true;
       Serial.println("Launched");
-      // Transmit Launched
+      //Transmit Launched
       //transmitData();
     }
       
