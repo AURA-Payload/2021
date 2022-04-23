@@ -55,8 +55,8 @@ RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);  // sensor objects
 Adafruit_BMP280 bmp; // BMP connected I2C
 
-unsigned long altInterval = 250;
 unsigned long altTimer = 0;  // stores timestamps of altitude samples
+unsigned long altInterval = 250;
 float initAlt = 0;  // stores altitude at ground level
 float checkAlt1 = 0;  // stores the previous altitude sample
 float checkAlt2 = 0;  // stores the current altitude sample
