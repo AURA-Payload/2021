@@ -60,8 +60,8 @@ unsigned long altInterval = 250;
 float initAlt = 0;  // stores altitude at ground level
 float checkAlt1 = 0;  // stores the previous altitude sample
 float checkAlt2 = 0;  // stores the current altitude sample
-int launchThresh = 609;  // rocket must pass this altitude (meters) for landing detection to proceed
-int altRange = 10; //  Amount of meters (+ or -) the rocket can be above/below the starting value.
+int launchThresh = 1;  // rocket must pass this altitude (meters) for landing detection to proceed - I decided on 609
+int altRange = 1; //  Amount of meters (+ or -) the rocket can be above/below the starting value. - I decided on 10
 float noiseLimit = 0.1;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
 bool isLaunched = false;  // flag for when launch has occurred
 bool isLanded = false;
@@ -83,7 +83,7 @@ int slsPower = 255;
 
 // Deployment variables
 bool easeActivated = false;
-bool easeDeployed = false;
+bool easeDeployed = true;
 bool legsActivated = false;
 bool legsDeployed = false;
 bool slsActivated = false;
@@ -255,7 +255,7 @@ void loop()
       slsVar = 0;
       legsVar = 0;
       
-      easeActivated = true;
+      //easeActivated = true;
       Serial.println("Ease set to activate");
     }
   
@@ -313,7 +313,8 @@ void loop()
       soarVar = 0;  // reset motors
       legsVar = 0;
       
-      slsVar = slsPower;
+      //slsVar = slsPower;
+      Serial.println("SLS Running");
     }
     else if(digitalRead(LIMIT_1)){  // if SOAR is extending and limit switch is pressed
       soarVar = 0;  // reset motors
@@ -353,7 +354,7 @@ void loop()
     else{  // last action was receive
       handleReceive();  // this stores received data to RXarray and saves RSSI
     }
-    Serial.println("Listening for packets");
+    //Serial.println("Listening for packets");
     receiveState = radio.startReceive();  // start receiving again
     enableInterrupt = true;  // reenable the interrupt
   }
@@ -380,28 +381,28 @@ void handleReceive()  // performs everything necessary when data comes in
 
   if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
-    Serial.println(F("[RFM97] Received packet!"));
+    //Serial.println(F("[RFM97] Received packet!"));
 
-    Serial.print(F("[RFM97] Data:\t\t"));  // print data
-    Serial.print(RXarray[0]);
-    Serial.print("\t");
-    Serial.print(RXarray[1], BIN);
-    Serial.print("\t");
-    Serial.print(RXarray[2]);
-    Serial.print("\t");
-    Serial.print(RXarray[3]);
-    Serial.print("\t");
-    Serial.print(RXarray[4]);
-    Serial.print("\t");
-    Serial.print(RXarray[5]);
-    Serial.print("\t");
-    Serial.print(RXarray[6]);
-    Serial.print("\t");
-    Serial.println(RXarray[7]);
-    
-    Serial.print(F("\t[RFM97] RSSI: "));  // print RSSI if desired
-    Serial.print(radio.getRSSI());
-    Serial.println(F(" dBm"));
+//    Serial.print(F("[RFM97] Received Data:\t"));  // print data
+//    Serial.print(RXarray[0]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[1], BIN);
+//    Serial.print("\t");
+//    Serial.print(RXarray[2]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[3]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[4]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[5]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[6]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[7]);
+//    
+//    Serial.print(F("\t[RFM97] RSSI: "));  // print RSSI if desired
+//    Serial.print(radio.getRSSI());
+//    Serial.println(F(" dBm"));
 
     if(RXarray[0] == 0)  // if the values are from MARCO, update the stuff
     {
@@ -455,22 +456,22 @@ void transmitData()  // this function just retransmits the received array with a
   hasTransmitted = true;
   transmitTimer = millis();  // reset transmit timer
   
-  Serial.print(F("[RFM97] Sending array ... "));
-  Serial.print(RXarray[0]);
-  Serial.print("\t");
-  Serial.print(RXarray[1], BIN);
-  Serial.print("\t");
-  Serial.print(RXarray[2]);
-  Serial.print("\t");
-  Serial.print(RXarray[3]);
-  Serial.print("\t");
-  Serial.print(RXarray[4]);
-  Serial.print("\t");
-  Serial.print(RXarray[5]);
-  Serial.print("\t");
-  Serial.print(RXarray[6]);
-  Serial.print("\t");
-  Serial.println(RXarray[7]);
+//  Serial.print(F("[RFM97] Sending array\t"));
+//  Serial.print(RXarray[0]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[1], BIN);
+//  Serial.print("\t");
+//  Serial.print(RXarray[2]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[3]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[4]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[5]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[6]);
+//  Serial.print("\t");
+//  Serial.println(RXarray[7]);
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
 }
 
