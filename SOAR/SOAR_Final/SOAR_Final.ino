@@ -288,10 +288,10 @@ void loop()
     }
   
     if(legsDeployed && !slsDeployed && !digitalRead(LIMIT_1)){  // if soar limit switch is not triggered
-      soarVar = 255;
+      slsVar = 255;
     }
     else if(digitalRead(LIMIT_1)){  // if SOAR is extending and limit switch is pressed
-      soarVar = 0;  // stop soar
+      slsVar = 0;  // stop sls
       slsDeployed = true;
       Serial.println("SLS Deployed");
     }
