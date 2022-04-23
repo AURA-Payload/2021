@@ -406,6 +406,7 @@ void handleReceive()  // performs everything necessary when data comes in
 
     if(RXarray[0] == 0)  // if the values are from MARCO, update the stuff
     {
+      receiveTime = millis();
       armVar = RXarray[1] & 0b00000001;  // armVar is set to the state of the arm bit
 
       if(!armVar){  // if autonomous control is deactivated
