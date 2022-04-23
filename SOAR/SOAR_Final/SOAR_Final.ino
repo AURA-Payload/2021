@@ -21,7 +21,7 @@
 #define LOCALPRESSURE 1028.1    // used to calculate altitude (in millibar)
 #define LED_2 22
 #define LED_1 23
-#define LIMIT_1 20
+#define LIMIT_1 20  // this is the limit switch input
 #define LIMIT_2 21
 
 #include <RadioLib.h>  // include radio library
