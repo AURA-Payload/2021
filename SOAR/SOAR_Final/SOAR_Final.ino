@@ -254,11 +254,6 @@ void loop()
     
       //Serial.print("SOAR motor value: ");
       Serial.println(soarVar);
-      
-  //    if((levelValue - levelTolerance) < event.acceleration.y && event.acceleration.y < (levelValue + levelTolerance))
-  //      Serial.println("\tLevel :)");
-  //    else
-  //      Serial.println("\tNot level >:(");
     
       if(abs(errorTerm) < levelTolerance){
         Serial.println("\tLevel :)");
