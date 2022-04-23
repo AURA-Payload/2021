@@ -149,7 +149,8 @@ void loop(){
   Serial.print(transmitTimer);
   Serial.println();
 
-  if((!hasTransmitted && millis() - receiveTime >= transmitDelay) || millis() - transmitTimer >= transmitInterval)
+  //if((!hasTransmitted && millis() - receiveTime >= transmitDelay) || millis() - transmitTimer >= transmitInterval)
+  if((!hasTransmitted && millis() - receiveTime >= transmitDelay))  // only transmit in response to a command
     transmitData();
   
   setMotor(motorSpeed);  // update the motor
@@ -192,10 +193,6 @@ void handleReceive()  // performs everything necessary when data comes in
     Serial.print(radio.getRSSI());
     Serial.println(F(" dBm"));
 
-
-    receiveTime = millis();  // store the time when data was received
-    hasTransmitted = false;  // indicate that we have not retransmitted stuff
-
     if(RXarray[0] == 0){  // if command is from MARCO
       isArmed = RXarray[1] & 0b00000001;  // set isArmed to arming bit (can disable during a deployment)
       
@@ -212,6 +209,9 @@ void handleReceive()  // performs everything necessary when data comes in
     }
     
     if(RXarray[0] == 2){  // if command is from SOAR
+      receiveTime = millis();  // store the time when data was received
+      hasTransmitted = false;  // indicate that we have not retransmitted stuff
+    
       if(!isDeploying && !deployed && RXarray[2] == 255)  // if it's not deploying yet and the EASE byte is set
       {
         isDeploying = true;
