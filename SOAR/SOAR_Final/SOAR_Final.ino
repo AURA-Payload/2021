@@ -67,6 +67,8 @@ bool isLaunched = false;  // flag for when launch has occurred
 bool isLanded = false;
 
 // Leveling varibles
+unsigned long accelTimer = 0;  // stores timestamp of levelling updates
+unsigned long accelInterval = 10;  // time between levelling updates
 float levelValue = 1.18;  // target value for level
 float levelTolerance = 0.1;  // acceptable range for "level"
 float errorTerm = 0;
@@ -235,7 +237,7 @@ void loop()
       }
     }
   
-    if(isLanded && !isLevel){  // run levelling code
+    if(isLanded && !isLevel && millis()-accelTimer >= accelInterval){  // run levelling code on an interval
       sensors_event_t event;
       accel.getEvent(&event);
       //Display the results (acceleration is measured in m/s^2)
@@ -248,7 +250,7 @@ void loop()
         errorTerm *= 1000;
       }
       soarVar = errorTerm * pGain;
-      soarVar = constrain(motorValue, -255, 255);
+      soarVar = constrain(soarVar, -255, 255);
     
       //Serial.print("SOAR motor value: ");
       Serial.println(soarVar);
