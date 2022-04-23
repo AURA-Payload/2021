@@ -296,11 +296,10 @@ void loop()
       Serial.println("SLS Deployed");
     }
 
-    if(slsDeployed && !rangeFinding){
-      fullyDeployed = true;
+    if(slsDeployed && !rangeFinding){  // once SLS is deployed
+      fullyDeployed = true;  // set deployed flag
       RXarray[1] = RXarray[1] |= 0b10000000; //Set bit to let MARCO know we are ready for range finding
-      //transmitData();
-      rangeFinding = true;
+      rangeFinding = true;  // indicate that rangefinding is eing activated
       Serial.println("Activating Range Finding");
     }
   }
