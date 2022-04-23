@@ -51,7 +51,7 @@ byte rangeState = 0;  // 1 = direction find started, 2 = ranging started, 3 = ra
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 50;  // time between tranmissions
+unsigned int transmitInterval = 250;  // time between tranmissions
 unsigned int transmitBlankTime = 5;  // dead time after a transmission
 
 unsigned int beaconTimer = 0;
@@ -100,7 +100,7 @@ void setup()
 
   radio.setDio0Action(setFlag);  // function that will be called when something is done
 
-  transmitData();  // send the first packet
+  //transmitData();  // send the first packet
 }
 
 void loop()
@@ -123,7 +123,6 @@ void loop()
 //      else  // if transmission good
 //        Serial.println(F("transmission finished"));
       
-
       transmitFlag = false;  // transmitting is finished
       txComplete = true;
     }
@@ -149,7 +148,6 @@ void loop()
     receiveState = radio.startReceive();  // start receiving again
   }
 
-  //if(rangeState == 0 && txComplete && ((newCommand && millis() >= transmitTimer + transmitBlankTime) || (millis() >= transmitTimer + transmitInterval)))
   if(rangeState == 0 && txComplete && (millis() >= transmitTimer + transmitInterval))
   {
     // if we have not entered the ranging mode
@@ -223,6 +221,8 @@ void transmitData()  // this transmit sends the packet
 {
   txComplete = false;
   transmitState = radio.startTransmit(TXarray, packetLength);  // transmit array
+  transmitFlag = true;
+  transmitTimer = millis();  // reset transmit timer
 
   Serial.print("Transmitted: ");
   Serial.print(TXarray[0]);
@@ -240,14 +240,11 @@ void transmitData()  // this transmit sends the packet
   Serial.print(TXarray[6]);
   Serial.print(", ");
   Serial.println(TXarray[7]);
-
-  transmitFlag = true;
-  transmitTimer = millis();  // reset transmit timer
 }
 
 void handleReceive()
 {
-  if(1==1 /*rangeState == 0*/)  // if ranging has not started, just print the received stuff & check for ranging begin
+  if(rangeState == 0)  // if ranging has not started, just print the received stuff & check for ranging begin
   {
     Serial.println(F("[SX1276] Received packet!"));
     
