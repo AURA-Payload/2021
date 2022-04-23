@@ -79,6 +79,8 @@ unsigned long legsTimer = 0;
 unsigned long legsDuration = 3000;  // how long to deploy the legs
 int legsPower = 30;  // how much power to send to the legs
 
+int slsPower = 255;
+
 // Deployment variables
 bool easeActivated = false;
 bool easeDeployed = false;
@@ -170,7 +172,8 @@ void setup()
                              8,  // preamble length (symbols)
                              0);  // gain (0 is automatic control)
   radio.setCRC(true);  // enables cyclic redundancy check
-  delay(10);
+  
+  delay(250);
 
   if (receiveState == RADIOLIB_ERR_NONE)  // if radio initialized correctly
   {
@@ -192,7 +195,7 @@ void setup()
   radio.setDio0Action(setFlag);  // function that will be called when something is done
   // ----- END RADIO SETUP -----
 
-  setMotors();  // sets the motors based on controls array
+  setMotors();  // sets the motors based on vars
 
   while(bmpStart + 20000 > millis())  // wait until the BMP has been on for 20s
     delay(10);
@@ -216,16 +219,25 @@ void setup()
 
 void loop()
 {
-  if(armVar) //autonomous control
+  if(armVar) //autonomous control section
   {  
     if(!isLaunched && (bmp.readAltitude(LOCALPRESSURE) - initAlt) > launchThresh)  // if current altitude is greater than threshold
     {
+      soarVar = 0;  // reset motors
+      slsVar = 0;
+      legsVar = 0;
+      
+      Serial.println(bmp.readAltitude(LOCALPRESSURE) - initAlt);  // print altitude
       isLaunched = true;
       Serial.println("Launched");
     }
       
     if(isLaunched && !isLanded && millis()-altTimer >= altInterval)  // sample new values every 250ms and check if we're landed
     {
+      soarVar = 0;  // reset motors
+      slsVar = 0;
+      legsVar = 0;
+      
       checkAlt1 = checkAlt2;  // transfer last sample to checkAlt1
       checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // sample a new altitude
       if(-altRange <= checkAlt2 <= altRange)  // if we are within the range
@@ -239,11 +251,18 @@ void loop()
     }
 
     if(isLanded && !easeActivated){  // activate EASE
+      soarVar = 0;  // reset motors
+      slsVar = 0;
+      legsVar = 0;
+      
       easeActivated = true;
       Serial.println("Ease set to activate");
     }
   
     if(easeDeployed && !isLevel && millis()-accelTimer >= accelInterval){  // run levelling code on an interval
+      slsVar = 0;  // reset motors
+      legsVar = 0;
+      
       sensors_event_t event;
       accel.getEvent(&event);
       //Display the results (acceleration is measured in m/s^2)
@@ -258,7 +277,7 @@ void loop()
       soarVar = errorTerm * pGain;
       soarVar = constrain(soarVar, -255, 255);
     
-      //Serial.print("SOAR motor value: ");
+      Serial.print("SOAR motor value: ");
       Serial.println(soarVar);
     
       if(abs(errorTerm) < levelTolerance){
@@ -272,6 +291,9 @@ void loop()
   
   
     if(isLevel && !legsActivated){  // wait until level and activate legs
+      soarVar = 0;  // reset motors
+      slsVar = 0;
+      
       Serial.println("Activating legs");
       legsTimer = millis();
       legsVar = legsPower;
@@ -279,21 +301,34 @@ void loop()
     }
 
     if(legsActivated && !legsDeployed && millis()-legsTimer >= legsDuration){  // if legs have been running for the duration
+      soarVar = 0;  // reset motors
+      slsVar = 0;
       legsVar = 0;
+      
       legsDeployed = true;
       Serial.println("Legs Deployed");
     }
   
     if(legsDeployed && !slsDeployed && !digitalRead(LIMIT_1)){  // if soar limit switch is not triggered
-      slsVar = 255;
+      soarVar = 0;  // reset motors
+      legsVar = 0;
+      
+      slsVar = slsPower;
     }
     else if(digitalRead(LIMIT_1)){  // if SOAR is extending and limit switch is pressed
+      soarVar = 0;  // reset motors
+      legsVar = 0;
+      
       slsVar = 0;  // stop sls
       slsDeployed = true;
       Serial.println("SLS Deployed");
     }
 
     if(slsDeployed && !rangeFinding){  // once SLS is deployed
+      soarVar = 0;  // reset motors
+      slsVar = 0;
+      legsVar = 0;
+      
       fullyDeployed = true;  // set deployed flag
       RXarray[1] = RXarray[1] |= 0b10000000; //Set bit to let MARCO know we are ready for range finding
       rangeFinding = true;  // indicate that rangefinding is eing activated
@@ -312,7 +347,6 @@ void loop()
     {
       transmitFlag = false;  // not transmitting this time
       txComplete = true;
-      //receiveState = radio.startReceive();  // start receiving again
       digitalWrite(LED_1, HIGH);  // LED 1 on while receive mode is active
     }
 
@@ -326,9 +360,10 @@ void loop()
 
   if(/*(!hasTransmitted && millis() - receiveTime >= transmitDelay) || */millis() - transmitTimer >= transmitInterval)
   {
-    transmitData();
+    transmitData();  // transmit a packet
   }
-  setMotors();
+
+  setMotors();  // update the motors
 }
 
 void setFlag(void)  // this function is called after complete packet transmission or reception
@@ -372,7 +407,7 @@ void handleReceive()  // performs everything necessary when data comes in
     {
       armVar = RXarray[1] & 0b00000001;  // armVar is set to the state of the arm bit
 
-      if(!armVar){
+      if(!armVar){  // if autonomous control is deactivated
         soarVar = RXarray[3];  // SOAR motor speed from RXarray
         if(~RXarray[1] & 0b00000100)  // if SOAR direction bit is not set
           soarVar *= -1;
