@@ -198,6 +198,7 @@ void setup()
     delay(10);
   
   initAlt = bmp.readAltitude(LOCALPRESSURE);
+  checkAlt2 = initAlt;
   Serial.println(initAlt);
   Serial.println("Startup complete");
   delay(1000);
@@ -240,8 +241,13 @@ void loop()
         }
       }
     }
+
+    if(isLanded && !easeActivated){  // activate EASE
+      easeActivated = true;
+      Serial.println("Ease set to activate");
+    }
   
-    if(isLanded && !isLevel && millis()-accelTimer >= accelInterval){  // run levelling code on an interval
+    if(easeDeployed && !isLevel && millis()-accelTimer >= accelInterval){  // run levelling code on an interval
       sensors_event_t event;
       accel.getEvent(&event);
       //Display the results (acceleration is measured in m/s^2)
@@ -268,14 +274,9 @@ void loop()
         Serial.println("\tNot level >:(");
     }
   
-    if(isLevel && !easeActivated){  // activate EASE
-      Serial.println("Leveling done");
-      easeActivated = true;
-      Serial.println("Ease set to activate");
-    }
   
-    if(easeDeployed && !legsActivated){  // wait until EASE is deployed and activate legs
-      Serial.println("Ease deployed");
+    if(isLevel && !legsActivated){  // wait until level and activate legs
+      Serial.println("Activating legs");
       legsTimer = millis();
       legsVar = legsPower;
       legsActivated = true;
