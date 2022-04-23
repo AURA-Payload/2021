@@ -75,6 +75,10 @@ float errorTerm = 0;
 float pGain = 50;
 bool isLevel = false; //flag for when leveling is done
 
+unsigned long legsTimer = 0;
+unsigned long legsDuration = 3000;  // how long to deploy the legs
+int legsPower = 30;  // how much power to send to the legs
+
 // Deployment variables
 bool easeActivated = false;
 bool easeDeployed = false;
@@ -264,19 +268,21 @@ void loop()
         Serial.println("\tNot level >:(");
     }
   
-    if(isLevel && !easeActivated){
+    if(isLevel && !easeActivated){  // activate EASE
       Serial.println("Leveling done");
       easeActivated = true;
       Serial.println("Ease set to activate");
     }
   
-    if(easeDeployed && !legsDeployed){
+    if(easeDeployed && !legsActivated){  // wait until EASE is deployed and activate legs
       Serial.println("Ease deployed");
-      legsVar = 50;
-      setMotors();
-      delay(3000);
+      legsTimer = millis();
+      legsVar = legsPower;
+      legsActivated = true;
+    }
+
+    if(legsActivated && !legsDeployed && millis()-legsTimer >= legsDuration){  // if legs have been running for the duration
       legsVar = 0;
-      setMotors();
       legsDeployed = true;
       Serial.println("Legs Deployed");
     }
