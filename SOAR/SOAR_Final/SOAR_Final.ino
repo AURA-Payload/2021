@@ -251,7 +251,7 @@ void loop()
       }
     }
 
-    if(isLanded && !easeActivated){  // activate EASE
+    if(isLaunched && isLanded && !easeActivated){  // activate EASE
       soarVar = 0;  // reset motors
       slsVar = 0;
       legsVar = 0;
@@ -260,7 +260,7 @@ void loop()
       Serial.println("Ease set to activate");
     }
   
-    if(easeDeployed && !isLevel && millis()-accelTimer >= accelInterval){  // run levelling code on an interval
+    if(isLaunched && isLanded && easeDeployed && !isLevel && millis()-accelTimer >= accelInterval){  // run levelling code on an interval
       slsVar = 0;  // reset motors
       legsVar = 0;
       
@@ -291,7 +291,7 @@ void loop()
     }
   
   
-    if(isLevel && !legsActivated){  // wait until level and activate legs
+    if(isLaunched && isLanded && easeDeployed && isLevel && !legsActivated){  // wait until level and activate legs
       soarVar = 0;  // reset motors
       slsVar = 0;
       
@@ -301,7 +301,7 @@ void loop()
       legsActivated = true;
     }
 
-    if(legsActivated && !legsDeployed && millis()-legsTimer >= legsDuration){  // if legs have been running for the duration
+    if(isLaunched && isLanded && easeDeployed && isLevel && legsActivated && !legsDeployed && millis()-legsTimer >= legsDuration){  // if legs have been running for the duration
       soarVar = 0;  // reset motors
       slsVar = 0;
       legsVar = 0;
@@ -310,23 +310,25 @@ void loop()
       Serial.println("Legs Deployed");
     }
   
-    if(legsDeployed && !slsDeployed && !digitalRead(LIMIT_1)){  // if soar limit switch is not triggered
-      soarVar = 0;  // reset motors
-      legsVar = 0;
-      
-      //slsVar = slsPower;
-      Serial.println("SLS Running");
-    }
-    else if(digitalRead(LIMIT_1)){  // if SOAR is extending and limit switch is pressed
-      soarVar = 0;  // reset motors
-      legsVar = 0;
-      
-      slsVar = 0;  // stop sls
-      slsDeployed = true;
-      Serial.println("SLS Deployed");
+    if(isLaunched && isLanded && easeDeployed && isLevel && legsActivated && legsDeployed && !slsDeployed){  // if soar limit switch is not triggered
+      if(!digitalRead(LIMIT_1)){
+        soarVar = 0;  // reset motors
+        legsVar = 0;
+        
+        //slsVar = slsPower;
+        Serial.println("SLS Running");
+      }
+      else{
+        soarVar = 0;  // reset motors
+        legsVar = 0;
+        
+        slsVar = 0;  // stop sls
+        slsDeployed = true;
+        Serial.println("SLS Deployed");
+      }
     }
 
-    if(slsDeployed && !rangeFinding){  // once SLS is deployed
+    if(isLaunched && isLanded && easeDeployed && isLevel && legsActivated && legsDeployed && slsDeployed && !rangeFinding){  // once SLS is deployed
       soarVar = 0;  // reset motors
       slsVar = 0;
       legsVar = 0;
