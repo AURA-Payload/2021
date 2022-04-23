@@ -414,7 +414,7 @@ void handleCommand()  //ADD A COMMAND FOR MANUALLY ENDING/BEGINNING RANGING AND 
     }
     else if (downLoc > -1)
     {
-      TXarray[4] = 255;
+      TXarray[4] = 100;
       TXarray[1] &= 0b11110111;
     }
     else
@@ -433,14 +433,14 @@ void handleCommand()  //ADD A COMMAND FOR MANUALLY ENDING/BEGINNING RANGING AND 
     }
     else if (upLoc > -1)
     {
-      TXarray[5] = 200;
-      TXarray[6] = 200;
+      TXarray[5] = 30;
+      TXarray[6] = 30;
       TXarray[1] |= 0b00010000;
     }
     else if (downLoc > -1)
     {
-      TXarray[5] = 200;
-      TXarray[6] = 200;
+      TXarray[5] = 30;
+      TXarray[6] = 30;
       TXarray[1] &= 0b11101111;
     }
     else
