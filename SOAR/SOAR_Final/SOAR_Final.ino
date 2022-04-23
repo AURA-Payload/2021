@@ -61,7 +61,7 @@ float initAlt = 0;  // stores altitude at ground level
 float checkAlt1 = 0;  // stores the previous altitude sample
 float checkAlt2 = 0;  // stores the current altitude sample
 int launchThresh = 609;  // rocket must pass this altitude (meters) for landing detection to proceed
-int altRange = 10; //Amount of meters (+ or -) the rocket can be above/below the starting value.
+int altRange = 10; //  Amount of meters (+ or -) the rocket can be above/below the starting value.
 float noiseLimit = 0.1;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
 bool isLaunched = false;  // flag for when launch has occurred
 bool isLanded = false;
@@ -210,9 +210,7 @@ void setup()
 void loop()
 {
   if(armVar) //autonomous control
-  {
-    currentAlt = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // make the altitude reading relative to ground level
-  
+  {  
     if(!isLaunched && (bmp.readAltitude(LOCALPRESSURE) - initAlt) > launchThresh)  // if current altitude is greater than threshold
     {
       isLaunched = true;
@@ -221,13 +219,12 @@ void loop()
       //transmitData();
     }
       
-    if(isLaunched && !isLanded)
+    if(isLaunched && !isLanded && millis()-altTimer >= altInterval)  // sample new values every 250ms and check if we're landed
     {
-      if(currentAlt <= altRange && currentAlt >= -altRange)
+      checkAlt1 = checkAlt2;  // transfer last sample to checkAlt1
+      checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // sample a new altitude
+      if(-altRange <= checkAlt2 <= altRange)  // if we are within the range
       {
-        checkAlt1 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
-        delay(250);
-        checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;
         if(checkAlt1 - noiseLimit < checkAlt2 < checkAlt1 + noiseLimit)
         {
           isLanded = true;
