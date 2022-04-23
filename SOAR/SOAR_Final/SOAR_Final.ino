@@ -127,8 +127,8 @@ void setup()
   pinMode(LEGS_PWM_2, OUTPUT);
   pinMode(LEGS_DIR_2, OUTPUT);
 
-  pinMode(LIMIT_1, INPUT);
-  pinMode(LIMIT_2, INPUT);
+  pinMode(LIMIT_1, INPUT_PULLUP);
+  pinMode(LIMIT_2, INPUT_PULLUP);
 
   digitalWrite(LED_2, HIGH);
 
