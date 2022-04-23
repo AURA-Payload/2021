@@ -222,8 +222,6 @@ void loop()
     {
       isLaunched = true;
       Serial.println("Launched");
-      //Transmit Launched
-      //transmitData();
     }
       
     if(isLaunched && !isLanded && millis()-altTimer >= altInterval)  // sample new values every 250ms and check if we're landed
@@ -236,8 +234,6 @@ void loop()
         {
           isLanded = true;
           Serial.println("Landed");
-          //Transmit Landed
-          //transmitData();
         }
       }
     }
