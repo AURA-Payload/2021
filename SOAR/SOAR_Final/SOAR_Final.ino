@@ -202,9 +202,9 @@ void setup()
   digitalWrite(LED_2, LOW);
 
   //TESTING VARIABLES = REMOVE!!!
-  armVar = 1;
-  isLaunched = true;
-  isLanded = true;
+  //armVar = 1;
+  //isLaunched = true;
+  //isLanded = true;
   
 }
 
