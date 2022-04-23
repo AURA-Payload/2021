@@ -48,7 +48,7 @@
 #define DIO1PIN 15
 
 #define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
-#define transmitInterval 500  // milliseconds between transmissions
+#define transmitInterval 1000  // milliseconds between transmissions
 
 RFM97 radio = new Module(CSPIN, DIO0PIN, NRSTPIN, DIO1PIN);  // radio object
 
