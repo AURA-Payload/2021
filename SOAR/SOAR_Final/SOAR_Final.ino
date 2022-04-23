@@ -76,7 +76,7 @@ float pGain = 50;
 bool isLevel = false; //flag for when leveling is done
 
 unsigned long legsTimer = 0;
-unsigned long legsDuration = 3000;  // how long to deploy the legs
+unsigned long legsDuration = 5000;  // how long to deploy the legs
 int legsPower = 30;  // how much power to send to the legs
 
 int slsPower = 255;
