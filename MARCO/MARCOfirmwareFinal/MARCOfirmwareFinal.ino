@@ -81,7 +81,7 @@ void setup()
                           9,  // spreading factor
                           7,  // coding rate
                           0x12,  // sync word
-                          17,  // output power (dBm)
+                          2,  // output power (dBm)
                           8,  // preamble length (symbols)
                           0);  // gain (0 is automatic control)
   radio.setRfSwitchPins(RXENPIN, TXENPIN);  // set up RF switch pins
