@@ -2,6 +2,10 @@
 // Based on code from Curio Res: https://github.com/curiores/ArduinoTutorials
 // Watch this video for more information: https://www.youtube.com/watch?v=dTGITLnYAY0
 
+#include <RadioLib.h>  // include radio library
+#include <math.h>       
+#include <TimeLib.h>
+
 #define ENCA 3 // YELLOW
 #define ENCB 2 // WHITE
 #define PWM_1 5
@@ -20,16 +24,6 @@
 
 #define TONE_IN A2
 
-#include <RadioLib.h>  // include radio library
-#include <math.h>       
-#include <TimeLib.h>
-
-// motor pins
-#define PWM_A 6  // PWM pin, motor A (SOAR)
-#define DIR_A 5  // Direction pin, motor A
-#define PWM_B 8  // PWM pin, motor B (SLS)
-#define DIR_B 7  // Direction pin, motor B
-
 // RFM97 connections:
 #define CSPIN 10
 #define DIO0PIN 14
@@ -38,11 +32,10 @@
 
 #define transmitDelay 10  // how many milliseconds to wait before transmitting stuff
 
-
 unsigned long transmitTimer = 0;  // stores the time of the last transmission
 unsigned long transmitInterval = 2000;  // stores the time of the last transmission
-unsigned int receiveTime = -1;
-unsigned int analogTime = -1; 
+unsigned int receiveTime = 0;
+unsigned int analogTime = 0;
 float distance = 0; 
 int rounds = 0;
 
