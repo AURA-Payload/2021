@@ -358,7 +358,7 @@ void loop()
     enableInterrupt = true;  // reenable the interrupt
   }
 
-  if(/*(!hasTransmitted && millis() - receiveTime >= transmitDelay) || */millis() - transmitTimer >= transmitInterval)
+  if((!hasTransmitted && millis() - receiveTime >= transmitDelay) || millis() - transmitTimer >= transmitInterval)
   {
     transmitData();  // transmit a packet
   }
