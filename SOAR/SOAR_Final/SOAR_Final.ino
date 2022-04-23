@@ -93,6 +93,7 @@ bool rangeFinding = false;
 
 // transmit variables
 unsigned long transmitTimer = 0;  // stores the time of the last transmission
+byte activationTransmits = 4;  // number of transmits to activate POLO
 
 // receive array
 byte RXarray[8];  // stores received array
@@ -403,9 +404,9 @@ void handleReceive()  // performs everything necessary when data comes in
 //    Serial.print("\t");
 //    Serial.print(RXarray[7]);
 //    
-//    Serial.print(F("\t[RFM97] RSSI: "));  // print RSSI if desired
-//    Serial.print(radio.getRSSI());
-//    Serial.println(F(" dBm"));
+    Serial.print(F("\t[RFM97] RSSI: "));  // print RSSI if desired
+    Serial.print(radio.getRSSI());
+    Serial.println(F(" dBm"));
 
     if(RXarray[0] == 0)  // if the values are from MARCO, update the stuff
     {
@@ -457,29 +458,37 @@ void transmitData()  // this function just retransmits the received array with a
   if(easeActivated){
     RXarray[2] = 255;
   }
-  
-  transmitFlag = true;
-  txComplete = false;
-  hasTransmitted = true;
-  transmitTimer = millis();  // reset transmit timer
-  
-//  Serial.print(F("[RFM97] Sending array\t"));
-//  Serial.print(RXarray[0]);
-//  Serial.print("\t");
-//  Serial.print(RXarray[1], BIN);
-//  Serial.print("\t");
-//  Serial.print(RXarray[2]);
-//  Serial.print("\t");
-//  Serial.print(RXarray[3]);
-//  Serial.print("\t");
-//  Serial.print(RXarray[4]);
-//  Serial.print("\t");
-//  Serial.print(RXarray[5]);
-//  Serial.print("\t");
-//  Serial.print(RXarray[6]);
-//  Serial.print("\t");
-//  Serial.println(RXarray[7]);
-  transmitState = radio.startTransmit(RXarray, 8);  // transmit array
+
+  if(deployed){  // set the direction/rangefinding bit
+    RXarray[1] |= 0b10000000;
+  }
+
+  if(!deployed || activationTransmits > 0)
+  {
+    transmitFlag = true;
+    txComplete = false;
+    hasTransmitted = true;
+    transmitTimer = millis();  // reset transmit timer
+  //  Serial.print(F("[RFM97] Sending array\t"));
+  //  Serial.print(RXarray[0]);
+  //  Serial.print("\t");
+  //  Serial.print(RXarray[1], BIN);
+  //  Serial.print("\t");
+  //  Serial.print(RXarray[2]);
+  //  Serial.print("\t");
+  //  Serial.print(RXarray[3]);
+  //  Serial.print("\t");
+  //  Serial.print(RXarray[4]);
+  //  Serial.print("\t");
+  //  Serial.print(RXarray[5]);
+  //  Serial.print("\t");
+  //  Serial.print(RXarray[6]);
+  //  Serial.print("\t");
+  //  Serial.println(RXarray[7]);
+    transmitState = radio.startTransmit(RXarray, 8);  // transmit array
+    if(deployed)
+      activationTransmits--;
+  }
 }
 
 void setMotors()
