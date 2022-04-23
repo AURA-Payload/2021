@@ -413,6 +413,9 @@ void handleReceive()  // performs everything necessary when data comes in
         soarVar = RXarray[3];  // SOAR motor speed from RXarray
         if(~RXarray[1] & 0b00000100)  // if SOAR direction bit is not set
           soarVar *= -1;
+          
+        if(!digitalRead(LIMIT_1) && soarVar > 1)
+          soarVar = 0;
         
         slsVar = RXarray[4];  // SLS speed from RXarray
         if(~RXarray[1] & 0b00001000)  // if SLS direction bit is not set
