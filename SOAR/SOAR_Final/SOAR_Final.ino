@@ -201,6 +201,7 @@ void setup()
     delay(10);
   
   initAlt = bmp.readAltitude(LOCALPRESSURE);
+  checkAlt1 = initAlt;
   checkAlt2 = initAlt;
   Serial.println(initAlt);
   Serial.println("Startup complete");
