@@ -93,7 +93,6 @@ bool rangeFinding = false;
 
 // transmit variables
 unsigned long transmitTimer = 0;  // stores the time of the last transmission
-byte activationTransmits = 4;  // number of transmits to activate POLO
 
 // receive array
 byte RXarray[8];  // stores received array
@@ -335,8 +334,6 @@ void loop()
       legsVar = 0;
       
       fullyDeployed = true;  // set deployed flag
-      RXarray[1] = RXarray[1] |= 0b10000000; //Set bit to let MARCO know we are ready for range finding
-      rangeFinding = true;  // indicate that rangefinding is eing activated
       Serial.println("Activating Range Finding");
     }
   }
@@ -438,6 +435,11 @@ void handleReceive()  // performs everything necessary when data comes in
         easeDeployed = true;
       }
     }
+
+    if(RXarray[0] == 3){  // if value is from POLO
+      if(RXarray[1] & 0b10000000)
+        rangeFinding = true;  // indicate that rangefinding is eing activated
+    }
   }
 }
 
@@ -463,13 +465,13 @@ void transmitData()  // this function just retransmits the received array with a
     RXarray[1] |= 0b10000000;
   }
 
-  if(!deployed || activationTransmits > 0)
+  if(!rangeFinding)
   {
     transmitFlag = true;
     txComplete = false;
     hasTransmitted = true;
     transmitTimer = millis();  // reset transmit timer
-  //  Serial.print(F("[RFM97] Sending array\t"));
+    Serial.println(F("[RFM97] Sending array\t"));
   //  Serial.print(RXarray[0]);
   //  Serial.print("\t");
   //  Serial.print(RXarray[1], BIN);
@@ -486,8 +488,6 @@ void transmitData()  // this function just retransmits the received array with a
   //  Serial.print("\t");
   //  Serial.println(RXarray[7]);
     transmitState = radio.startTransmit(RXarray, 8);  // transmit array
-    if(deployed)
-      activationTransmits--;
   }
 }
 
