@@ -247,7 +247,7 @@ void transmitData()  // this transmit sends the packet
 
 void handleReceive()
 {
-  if(rangeState == 0)  // if ranging has not started, just print the received stuff & check for ranging begin
+  if(1==1 /*rangeState == 0*/)  // if ranging has not started, just print the received stuff & check for ranging begin
   {
     Serial.println(F("[SX1276] Received packet!"));
     
