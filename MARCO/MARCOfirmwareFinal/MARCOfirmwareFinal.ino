@@ -51,7 +51,7 @@ byte rangeState = 0;  // 1 = direction find started, 2 = ranging started, 3 = ra
 
 // Transmit/receive variables
 unsigned int transmitTimer = 0;  // stores the time of the last transmission
-unsigned int transmitInterval = 250;  // time between tranmissions
+unsigned int transmitInterval = 100;  // time between tranmissions
 unsigned int transmitBlankTime = 5;  // dead time after a transmission
 
 unsigned int beaconTimer = 0;
@@ -81,7 +81,7 @@ void setup()
                           9,  // spreading factor
                           7,  // coding rate
                           0x12,  // sync word
-                          2,  // output power (dBm)
+                          15,  // output power (dBm)
                           8,  // preamble length (symbols)
                           0);  // gain (0 is automatic control)
   radio.setRfSwitchPins(RXENPIN, TXENPIN);  // set up RF switch pins
@@ -99,8 +99,6 @@ void setup()
   }
 
   radio.setDio0Action(setFlag);  // function that will be called when something is done
-
-  //transmitData();  // send the first packet
 }
 
 void loop()
@@ -126,7 +124,6 @@ void loop()
       transmitFlag = false;  // transmitting is finished
       txComplete = true;
     }
-
     else  // last action was receive
     {
       receiveState = radio.readData(RXarray, packetLength);  // save received data to RXarray
@@ -145,6 +142,7 @@ void loop()
     }
 
     enableInterrupt = true;  // reenable the interrupt
+    Serial.println("startReceive");
     receiveState = radio.startReceive();  // start receiving again
   }
 
@@ -244,11 +242,10 @@ void transmitData()  // this transmit sends the packet
 
 void handleReceive()
 {
+  Serial.println("handleReceive");
   if(rangeState == 0)  // if ranging has not started, just print the received stuff & check for ranging begin
   {
-    Serial.println(F("[SX1276] Received packet!"));
-    
-    Serial.print("   Received: ");
+    Serial.print(F("[SX1276] Received packet:\t"));
     Serial.print(RXarray[0]);
     Serial.print(", ");
     Serial.print(RXarray[1], BIN);
