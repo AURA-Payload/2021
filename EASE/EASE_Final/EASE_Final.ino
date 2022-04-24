@@ -17,7 +17,7 @@
 #define NRSTPIN 2
 #define DIO1PIN 4
 
-#define totalDistance 17L //number of motor shaft rotations to complete
+#define totalDistance 17L //number of motor shaft rotations to complete - 17
 #define gearRatio 325L // for testing output shaft accuracy: 302 for POLO, 349 for EASE
 //#define gearRatio 1  // for testing small distance accuracy
 #define pulsePerRotate 11L  // encoder pulses (rising) for one rotation: 7 for POLO, 11 for EASE
@@ -76,7 +76,7 @@ void setup() {
                              9,  // spreading factor
                              7,  // coding rate
                              0x12,  // sync word
-                             17,  // output power (dBm)
+                             15,  // output power (dBm)
                              8,  // preamble length (symbols)
                              0);  // gain (0 is automatic control)
   radio.setCRC(true);  // enables cyclic redundancy check
@@ -170,28 +170,28 @@ void handleReceive()  // performs everything necessary when data comes in
 
   if (receiveState == RADIOLIB_ERR_NONE)  // packet received correctly
   {
-    Serial.println(F("[RFM95] Received packet!"));
-
-    Serial.print(F("[RFM95] Data:\t\t"));  // print data
-    Serial.print(RXarray[0]);
-    Serial.print("\t");
-    Serial.print(RXarray[1], BIN);
-    Serial.print("\t");
-    Serial.print(RXarray[2]);
-    Serial.print("\t");
-    Serial.print(RXarray[3]);
-    Serial.print("\t");
-    Serial.print(RXarray[4]);
-    Serial.print("\t");
-    Serial.print(RXarray[5]);
-    Serial.print("\t");
-    Serial.print(RXarray[6]);
-    Serial.print("\t");
-    Serial.print(RXarray[7]);
-    
-    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
-    Serial.print(radio.getRSSI());
-    Serial.println(F(" dBm"));
+//    Serial.println(F("[RFM95] Received packet!"));
+//
+//    Serial.print(F("[RFM95] Data:\t\t"));  // print data
+//    Serial.print(RXarray[0]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[1], BIN);
+//    Serial.print("\t");
+//    Serial.print(RXarray[2]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[3]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[4]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[5]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[6]);
+//    Serial.print("\t");
+//    Serial.print(RXarray[7]);
+//    
+//    Serial.print(F("\t[RFM95] RSSI: "));  // print RSSI if desired
+//    Serial.print(radio.getRSSI());
+//    Serial.println(F(" dBm"));
 
     if(RXarray[0] == 0){  // if command is from MARCO
       isArmed = RXarray[1] & 0b00000001;  // set isArmed to arming bit (can disable during a deployment)
@@ -201,8 +201,7 @@ void handleReceive()  // performs everything necessary when data comes in
         if(~RXarray[1] & 0b00000010)  // if direction bit is not set
           motorSpeed *= -1;
       }
-      else if(!isArmed)  // is it is currently deploying and has been disarmed
-      {
+      if(isDeploying && !isArmed){  // is it is currently deploying and has been disarmed
         isDeploying = false;  // stop deploying
         motorSpeed = 0;  // set motorSpeed to 0
       }
@@ -244,22 +243,22 @@ void transmitData()  // this function just retransmits the received array with a
     RXarray[2] = 1;
   }
   
-  Serial.print(F("[RFM95] Sending array ... "));
-  Serial.print(RXarray[0]);
-  Serial.print("\t");
-  Serial.print(RXarray[1], BIN);
-  Serial.print("\t");
-  Serial.print(RXarray[2]);
-  Serial.print("\t");
-  Serial.print(RXarray[3]);
-  Serial.print("\t");
-  Serial.print(RXarray[4]);
-  Serial.print("\t");
-  Serial.print(RXarray[5]);
-  Serial.print("\t");
-  Serial.print(RXarray[6]);
-  Serial.print("\t");
-  Serial.println(RXarray[7]);
+//  Serial.print(F("[RFM95] Sending array ... "));
+//  Serial.print(RXarray[0]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[1], BIN);
+//  Serial.print("\t");
+//  Serial.print(RXarray[2]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[3]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[4]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[5]);
+//  Serial.print("\t");
+//  Serial.print(RXarray[6]);
+//  Serial.print("\t");
+//  Serial.println(RXarray[7]);
   transmitState = radio.startTransmit(RXarray, 8);  // transmit array
 }
 
