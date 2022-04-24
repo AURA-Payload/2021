@@ -56,15 +56,13 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);  // sensor obj
 Adafruit_BMP280 bmp; // BMP connected I2C
 
 unsigned long altTimer = 0;  // stores timestamps of altitude samples
-unsigned long altInterval = 250;
+unsigned long altInterval = 1500;
 float initAlt = 0;  // stores altitude at ground level
 float checkAlt1 = 0;  // stores the previous altitude sample
 float checkAlt2 = 0;  // stores the current altitude sample
-int launchThresh = 1;  // rocket must pass this altitude (meters) for landing detection to proceed - I decided on 609
-int altRange = 1; //  Amount of meters (+ or -) the rocket can be above/below the starting value. - I decided on 10
-float noiseLimit = 0.1;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
-bool isLaunched = false;  // flag for when launch has occurred
-bool isLanded = false;
+int launchThresh = 609;  // rocket must pass this altitude (meters) for landing detection to proceed - I decided on 609
+int altRange = 8; //  Amount of meters (+ or -) the rocket can be above/below the starting value. - I decided on 10
+float noiseLimit = 0.05;  // amount of noise allowed between values after landing - lower will make it trigger when the rocket is more still
 
 // Leveling varibles
 unsigned long accelTimer = 0;  // stores timestamp of levelling updates
@@ -72,18 +70,21 @@ unsigned long accelInterval = 10;  // time between levelling updates
 float levelValue = 1.18;  // target value for level
 float levelTolerance = 0.1;  // acceptable range for "level"
 float errorTerm = 0;
-float pGain = 50;
+float pGain = -50;
 bool isLevel = false; //flag for when leveling is done
 
 unsigned long legsTimer = 0;
-unsigned long legsDuration = 5000;  // how long to deploy the legs
-int legsPower = 30;  // how much power to send to the legs
+unsigned long legsDuration = 7500;  // how long to deploy the legs
+int legsPower = -30;  // how much power to send to the legs
 
 int slsPower = 255;
 
 // Deployment variables
+bool isLaunched = false;  // flag for when launch has occurred
+bool isLanded = false;
+bool armVar = false;
 bool easeActivated = false;
-bool easeDeployed = true;
+bool easeDeployed = false;
 bool legsActivated = false;
 bool legsDeployed = false;
 bool slsActivated = false;
@@ -109,7 +110,6 @@ unsigned long receiveTime = 0;  // stores the time when a packet was received
 bool hasTransmitted = true;
 
 // motor speed control variables
-int armVar = 0;
 int soarVar = 0;
 int slsVar = 0;
 int legsVar = 0;
@@ -147,7 +147,7 @@ void setup()
   bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
                   Adafruit_BMP280::SAMPLING_X2,
                   Adafruit_BMP280::SAMPLING_X16,
-                  Adafruit_BMP280::FILTER_OFF,
+                  Adafruit_BMP280::FILTER_X4,
                   Adafruit_BMP280::STANDBY_MS_500);
 
   // ----- ADXL345 ACCELEROMETER SETUP -----
@@ -168,7 +168,7 @@ void setup()
                              9,  // spreading factor
                              7,  // coding rate
                              0x12,  // sync word
-                             17,  // output power (dBm)
+                             15,  // output power (dBm)
                              8,  // preamble length (symbols)
                              0);  // gain (0 is automatic control)
   radio.setCRC(true);  // enables cyclic redundancy check
@@ -205,7 +205,7 @@ void setup()
   checkAlt2 = initAlt;
   Serial.println(initAlt);
   Serial.println("Startup complete");
-  delay(1000);
+  delay(2000);
   
   Serial.println("Listening for packets");
   receiveState = radio.startReceive();  // start listening
@@ -220,17 +220,20 @@ void setup()
 
 void loop()
 {
+  delay(50);
   if(armVar) //autonomous control section
-  {  
-    if(!isLaunched && (bmp.readAltitude(LOCALPRESSURE) - initAlt) > launchThresh)  // if current altitude is greater than threshold
+  {
+    if(!isLaunched)  // if current altitude is greater than threshold
     {
       soarVar = 0;  // reset motors
       slsVar = 0;
       legsVar = 0;
-      
-      Serial.println(bmp.readAltitude(LOCALPRESSURE) - initAlt);  // print altitude
-      isLaunched = true;
-      Serial.println("Launched");
+
+      Serial.println(bmp.readAltitude(LOCALPRESSURE) - initAlt);
+      if((bmp.readAltitude(LOCALPRESSURE) - initAlt) > launchThresh){
+        isLaunched = true;
+        Serial.println("Launched");
+      }
     }
       
     if(isLaunched && !isLanded && millis()-altTimer >= altInterval)  // sample new values every 250ms and check if we're landed
@@ -241,9 +244,10 @@ void loop()
       
       checkAlt1 = checkAlt2;  // transfer last sample to checkAlt1
       checkAlt2 = bmp.readAltitude(LOCALPRESSURE) - initAlt;  // sample a new altitude
-      if(-altRange <= checkAlt2 <= altRange)  // if we are within the range
+      Serial.println(checkAlt2 - checkAlt1);
+      if(checkAlt2 >= -altRange && checkAlt2 <= altRange)  // if we are within the range
       {
-        if(checkAlt1 - noiseLimit < checkAlt2 < checkAlt1 + noiseLimit)
+        if(checkAlt2 > checkAlt1 - noiseLimit && checkAlt2 < checkAlt1 + noiseLimit)
         {
           isLanded = true;
           Serial.println("Landed");
@@ -256,7 +260,7 @@ void loop()
       slsVar = 0;
       legsVar = 0;
       
-      //easeActivated = true;
+      easeActivated = true;
       Serial.println("Ease set to activate");
     }
   
@@ -311,11 +315,11 @@ void loop()
     }
   
     if(isLaunched && isLanded && easeDeployed && isLevel && legsActivated && legsDeployed && !slsDeployed){  // if soar limit switch is not triggered
-      if(!digitalRead(LIMIT_1)){
+      if(digitalRead(LIMIT_1)){
         soarVar = 0;  // reset motors
         legsVar = 0;
         
-        //slsVar = slsPower;
+        slsVar = slsPower;
         Serial.println("SLS Running");
       }
       else{
@@ -461,7 +465,7 @@ void transmitData()  // this function just retransmits the received array with a
     RXarray[2] = 255;
   }
 
-  if(deployed){  // set the direction/rangefinding bit
+  if(fullyDeployed){  // set the direction/rangefinding bit
     RXarray[1] |= 0b10000000;
   }
 
